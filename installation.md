@@ -80,32 +80,11 @@ GOTO="END_20_DISK_BAY"
 - https://wiki.debian-fr.xyz/Smartmontools
 
 
-## Gestion des disques logiques
-
-
-Créer les disques avec RAID :
-
-lvcreate --size 10G --name lv_root --type raid5 vg_system
-lvcreate --size 10G --name lv_swap --type raid5 vg_system
-lvcreate -l 100%FREE --name lv_data --type raid5 vg_system
-
-
-Commandes utiles :
-
-
 # Sécurisation
 
 ## Certificats GANDI
 
 https://nginx.org/en/docs/http/configuring_https_servers.html
 https://jlecour.github.io/ssl-gandi-nginx-debian/
-
-
-# Lignes de commande plus sympa
-
-## Liquidprompt
-
-## alias
-
 
 
