@@ -1,0 +1,22 @@
+#!/bin/bash
+# Affiche les infos sur les disques LVM
+
+SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source $SCRIPTPATH/colors.sh
+
+
+echo -e "${WHITE}                Etat LVM${NC}"  
+echo -e "${WHITE}+---------------------------------------------+${NC}"
+
+echo -e "${WHITE}Disque\t\tVol. grpe\tTaille\tLibre${NC}"
+pvs --units h --noheadings | awk '{print $1 "\t" $2 "\t" $5 "\t" $6}'
+echo
+
+echo -e "${WHITE}Vol.grpe\tPV\tLV\tTaille\tLibre${NC}"
+vgs --units h --noheadings | awk '{print $1 "\t" $2 "\t" $3 "\t" $6 "\t" $7}'
+echo
+
+echo -e "${WHITE}Vol.log.\tTaille\tSynchro\tHealth${NC}" 
+lvs --units h -o lv_name,lv_size,sync_percent,lv_health_status --noheadings |  awk '{print $1 "\t\t" $2 "\t" $3 "\t" $4}'
+
+echo -e "${WHITE}+---------------------------------------------+${NC}"

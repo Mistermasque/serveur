@@ -1,0 +1,25 @@
+#!/bin/bash
+
+SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source $SCRIPTPATH/colors.sh
+
+# Liste des disques dur :
+disks=$(lsblk | awk '($6=="disk") {print $1}')
+
+
+echo -e "${WHITE}            Etat SMART des disques${NC}"  
+echo -e "${WHITE}+---------------------------------------------+${NC}"
+
+for disk in $disks; do
+  errors=$( smartctl -A /dev/$disk | awk 'BEGIN{errors=0} (NR > 7 && $4 != "" && $4 <= $6) { ++errors } END{ print errors }' )
+  test="${green}OK${NC}"
+
+  if [[ "$errors" -gt 0 ]]; then
+    test="${RED}ERREUR${NC}" 
+  fi
+  
+  echo -e "   - /dev/$disk                 : ${test}"
+
+done
+
+echo -e "${WHITE}+---------------------------------------------+${NC}"

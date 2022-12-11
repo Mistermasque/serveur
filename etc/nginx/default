@@ -1,0 +1,41 @@
+# Configuration par défaut pour tous les serveurs
+# cela redirige systématiquement sur l'adresse en https
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    server_name _;
+    
+    # Permet d'avoir les validations ACME (utile pour COZY)
+    location /.well-known/acme-challenge/ {
+        alias /etc/ssl/private/acme-challenge/;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# Permet d'afficher une page générale pour toute requête
+server {
+    listen 443 ssl default_server;
+
+    server_name _;
+    
+    root /var/www/html;
+    
+    index index.html index.htm index.nginx-debian.html;
+    
+    include /etc/nginx/ssl_params;
+    
+    location /.well-known/acme-challenge/ {
+        alias /etc/ssl/private/acme-challenge/;
+    }
+    
+    location / {
+	# First attempt to serve request as file, then
+	# as directory, then fall back to displaying a 404.
+	try_files $uri $uri/ =404;
+    }
+}
+

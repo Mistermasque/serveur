@@ -1,0 +1,16 @@
+# /etc/logrotate.d/rclonebackup
+
+/var/log/rclonebackup.log {
+	# Fait la rotation tous les mois
+	monthly
+	# Ne garde que les 2 derniers mois
+	rotate 2
+	compress
+	delaycompress
+	# Ne bloque pas si il n'y a pas de log et passe au log suivant
+	missingok
+	# Ne fait pas la rotation si le log est vide
+	notifempty
+	# Création du fichier vide avec les droits suivants après rotation
+	create 640 root root
+}

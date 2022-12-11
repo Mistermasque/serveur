@@ -1,0 +1,17 @@
+# Fichier de configuration à utiliser pour la création d'une instance cozy
+# sur le domaine cozy.mon-domaine.fr
+server {
+    listen 80;
+    listen [::]:80;
+    
+    root /var/www/html;
+    server_name cozy.mon-domaine.fr *.cozy.mon-domaine.fr;
+
+    location /.well-known/acme-challenge/ {
+        alias /etc/ssl/private/acme-challenge/;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}

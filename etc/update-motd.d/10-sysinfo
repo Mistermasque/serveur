@@ -1,0 +1,77 @@
+#!/bin/bash
+# Simple system performance counter retriever
+
+SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source $SCRIPTPATH/colors.sh
+
+
+
+colorize() {
+    local value="$1"
+    local high="$2"
+    local mid="$3"
+
+    if [ $value -gt "$high" ]; then
+        value="${RED}${value}${NC}"
+    elif [ $value -gt "$mid" ]; then
+        value="${YELLOW}${value}${NC}"
+    else
+        value="${green}${value}${NC}"
+    fi
+
+    echo -ne "$value"
+}
+
+
+# current date
+date=`date '+%a %d %b %Y %r'`
+
+
+# current cpu load
+cpu_load=$( cat /proc/loadavg | awk '{print $1*100}' )
+
+# used memory
+memory_usage=$( free -m | awk '($1=="Mem:"){memTotal=$2; memUsed=$3} END{printf "%.0f", memUsed/memTotal * 100}' )
+ 
+# used swap memory
+# swap_usage=$(free -m | awk '($1=="Partition d'échange:"){swapTotal=$2; swapUsed=$3} END{printf "%.0f", swapUsed/swapTotal * 100}')
+
+# number of open user sessions
+user_sessions=$(users | wc -l)
+ 
+# system uptime
+UPTIME_DAYS=$(expr `cat /proc/uptime | cut -d '.' -f1` % 31556926 / 86400)
+UPTIME_HOURS=$(expr `cat /proc/uptime | cut -d '.' -f1` % 31556926 % 86400 / 3600)
+UPTIME_MINUTES=$(expr `cat /proc/uptime | cut -d '.' -f1` % 31556926 % 86400 % 3600 / 60)
+sys_uptime="${UPTIME_DAYS}j, ${UPTIME_HOURS}h, ${UPTIME_MINUTES}m"
+ 
+# running processes
+running_processes=`ps aux | wc -l`
+
+
+echo -e "${WHITE}           Utilisation du système${NC}"  
+echo -e "${WHITE}+---------------------------------------------+${NC}"   
+echo -e "   - CPU                         : $( colorize ${cpu_load} 90 50 ) %"
+echo -e "   - Mémoire                     : $( colorize ${memory_usage} 90 50 ) %"
+echo -e "   - Swap                        : $( colorize ${swap_usage} 90 50 ) %"
+echo -e "   - Uptime                      : ${sys_uptime}"
+echo -e "   - Sessions ouvertes           : ${user_sessions}"
+echo -e "   - Process en cours            : ${running_processes}"
+
+df -h | awk '/^\/dev/ && ! /loop/' | while read mount
+do
+    mount_point=$( echo "$mount" | awk '{ print $6 }' )
+    space_used=$( echo "$mount" | awk '{ printf "%d\n", $5 }' )
+    nb_space=$(( 28 - ${#mount_point} ))
+    i=0
+    align=""
+
+    while [[ "$i" -lt "$nb_space" ]]; do
+        align="$align "
+        (( i+=1 ))
+    done
+
+    echo -e "   - ${mount_point}${align}: $( colorize ${space_used} 90 50 ) %"
+done
+
+echo -e "${WHITE}+---------------------------------------------+${NC}"

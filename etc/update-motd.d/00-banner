@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Bannière
+
+SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source $SCRIPTPATH/colors.sh
+
+echo -e "            ${BLUE} _   _ ${WHITE}   _   ${RED} ____  ${NC}"
+echo -e "            ${BLUE}| \ | |${WHITE}  / \  ${RED}/ ___| ${NC}"
+echo -e "            ${BLUE}|  \| |${WHITE} / _ \ ${RED}\___ \ ${NC}"
+echo -e "            ${BLUE}| |\  |${WHITE}/ ___ \ ${RED}___) |${NC}"
+echo -e "            ${BLUE}|_| \_${WHITE}/_/   \_\\\\${RED}____/ ${NC}"
+echo
+

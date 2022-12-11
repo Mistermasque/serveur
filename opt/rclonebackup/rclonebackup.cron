@@ -1,0 +1,6 @@
+#!/bin/sh
+# /etc/cron.daily/rclonebackup
+
+echo "`date +'%Y-%m-%d %H:%M:%S'` Démarrage script de sauvegarde"
+/opt/rclonebackup/rclonebackup.sh >> /var/log/rclonebackup.log
+

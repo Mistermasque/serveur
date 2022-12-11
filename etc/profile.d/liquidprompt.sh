@@ -1,0 +1,2 @@
+source /opt/liquidprompt/liquidprompt
+
