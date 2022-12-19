@@ -1,0 +1,49 @@
+#!/bin/bash
+set -euo pipefail
+
+workDir="$2"
+name="$3"
+repo="$4"
+size="$5"
+description="$6"
+
+infoFile="${repo}/${name}.info.json"
+archiveFile="${repo}/${name}.tar.gz"
+rcloneDest="remote:${repo}/"
+
+# Cette méthode créé l'archive tel que Yunohost l'attends
+function createLocalArchive() {
+    cd "$workDir"
+    cp info.json "${infoFile}"
+    tar cvzf "${archiveFile}" *
+}
+
+function rcloneCopy() {
+    rclone copy -v "$infoFile" "${rcloneDest}"
+    rclone copy -v "$archiveFile" "${rcloneDest}"
+}
+
+# Supprime toutes les archives plus anciennes que 3 mois en local et distant
+function clean() {
+    numberOfDays6MonthAgo=$(( ( $(date '+%s') - $(date -d '3 months ago' '+%s') ) / 86400 ))
+    find "$repo" -mtime +$numberOfDays6MonthAgo -type f -delete
+    rclone delete -v "${rcloneDest}" --min-age 3M
+}
+
+case "$1" in
+  need_mount)
+    # Set false if your method can itself put files in good place in your archive
+    true
+    ;;
+  backup)
+    createLocalArchive
+    rcloneCopy
+    clean
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
