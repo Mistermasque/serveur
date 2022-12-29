@@ -11,11 +11,15 @@ infoFile="${repo}/${name}.info.json"
 archiveFile="${repo}/${name}.tar.gz"
 rcloneDest="remote:${repo}/"
 
-# Cette méthode créé l'archive tel que Yunohost l'attends
+# Cette méthode créé l'archive tel que Yunohost l'attend
 function createLocalArchive() {
     cd "$workDir"
     cp info.json "${infoFile}"
     tar cvzf "${archiveFile}" *
+    if ! gzip -t "${archiveFile}"; then
+        echo "Error while creating archive file ${archiveFile}. The compressed file is corrupted !" >&2
+        exit 1
+    fi
 }
 
 function rcloneCopy() {
@@ -31,18 +35,18 @@ function clean() {
 }
 
 case "$1" in
-  need_mount)
-    # Set false if your method can itself put files in good place in your archive
-    true
-    ;;
-  backup)
-    createLocalArchive
-    rcloneCopy
-    clean
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
+    need_mount)
+        # Set false if your method can itself put files in good place in your archive
+        true
+        ;;
+    backup)
+        createLocalArchive
+        rcloneCopy
+        clean
+        ;;
+    *)
+        echo "hook called with unknown argument \`$1'" >&2
+        exit 1
     ;;
 esac
 

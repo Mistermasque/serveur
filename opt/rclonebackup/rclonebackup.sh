@@ -25,7 +25,7 @@ fi
 
 
 if [ ${#DIRS[@]} -eq 0 ]; then
-    echo "Alert, directory list is empty. Abording" >&2
+   echo "Alert, directory list is empty. Abording" >&2
 	exit 1
 fi
 

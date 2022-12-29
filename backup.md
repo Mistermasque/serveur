@@ -72,7 +72,7 @@ Aux différentes questions :
 - **3** : ne pas chiffrer les noms des fichiers
 - **2** : ne pas chiffrer les noms des dossiers
 - **g** : Générer un random password
-- **1024** : Maximum
+- **256** : Suffisant pour être sécurisé
 - <span style="color:red">**Enregistrer le mot de passe généré dans un endroit sécurisé !**</span>
 - **y** : Valider le mot de passe
 - **g** : Générer un salt (password 2)
@@ -104,18 +104,11 @@ Aux différentes questions :
 - https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html
 - https://forum.rclone.org/t/delete-old-files-remotely/4471
 - https://rclone.org/docs/#time-option
+- https://doc.fedora-fr.org/wiki/CRON_:_Configuration_de_t%C3%A2ches_automatis%C3%A9es
 
-Installer le fichier [05-rclone](./etc/yunohost/hooks.d/backup_method/05-rclone) dans **/etc/yunohost/hooks.d/backup_method/**
+Installer le fichier [05-rclone](./etc/yunohost/hooks.d/backup_method/05-rclone) dans **/etc/yunohost/hooks.d/backup_method/**.
 
-Ajouter la sauvegarde automatique dans le crontab :
-```bash
-sudo crontab -e
-```
-
-```conf
-# Lancement de la sauvegarde tous les 5 du mois à 3 heures du matin
-0 3 5 * * yunohost backup create --method=rclone --quiet
-```
+Installer le fichier [yunohost-backup-rclone](./etc/cron.d/yunohost-backup-rclone) dans **/etc/cron.d/** pour activer l'exécution automatique.
 
 ## Restaurer rclone
 
@@ -169,7 +162,7 @@ Pour sauvegarder uniquement les bases de données MariaDB, on peut utiliser le s
 - https://doc.ubuntu-fr.org/logrotate
 - https://doc.ubuntu-fr.org/anacron
 
-Installer tous les fichiers du dossier [mysqlbackup](./opt/mysqlbackup/) dans **/opt/mysqlbackup**.
+Installer tous les fichiers du dossier [mysqlbackup](./opt/mysqlbackup/) dans **/opt/mysqlbackup/**.
 
 Créer le fichier de configuration
 ```bash
@@ -186,9 +179,9 @@ DEFPATH="/home/yunohost.backup/mariadb/"
 
 ## Activer la sauvegarde auto et le log
 
-Activer la sauvegarde avec anacron :
+Activer la sauvegarde auto avec cron :
 ```bash
-cd /etc/cron.weekly
+cd /etc/cron.d
 sudo ln -sfn /opt/mysqlbackup/mysqlbackup.cron mysqlbackup
 ```
 
@@ -215,9 +208,9 @@ Modifier les variables :
 DIRS=('/home/yunohost.backup/mariadb/')
 ```
 
-Activer l'envoi auto avec anacron :
+Activer l'envoi auto avec cron :
 ```bash
-cd /etc/cron.weekly
+cd /etc/cron.d
 sudo ln -sfn /opt/rclonebackup/rclonebackup.cron rclonebackup
 ```
 
