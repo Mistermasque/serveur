@@ -1,5 +1,6 @@
 #!/bin/bash
 # Affiche les infos sur les disques LVM
+# Nécessite d'avoir créé un partitionnement avec LVM
 
 SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source $SCRIPTPATH/colors.sh

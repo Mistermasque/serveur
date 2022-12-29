@@ -1,0 +1,34 @@
+#!/bin/bash
+# Affiche les infos sur les RAID logiciels
+# Nécessite d'avoir créé des RAID logiciel avec mdadm
+
+SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source $SCRIPTPATH/colors.sh
+
+echo -e "${WHITE}                Etat RAID${NC}"  
+echo -e "${WHITE}+---------------------------------------------+${NC}"
+awk_script='BEGIN {
+    c_red = "\033[01;31m";
+    c_green = "\033[00;32m";
+    c_white = "\033[01;37m";
+    c_reset = "\033[00m";
+    line = "";
+}
+length(line) != 0 {
+    state = sprintf("%s%s%s", c_green, "OK", c_reset);
+    if ($NF ~ /_/) {
+        state = sprintf("%s%s%s", c_red, "ERREUR", c_reset)
+    };
+    printf "%s %s\n", line, state;
+    line = "";
+}
+$1 ~ /md/ {
+    line = sprintf("- %s%s%s", c_white, $1, c_reset);
+    for (i=2; i <= NF ; i++) {
+        line = sprintf("%s %s", line, $i);
+    }
+}'
+
+awk "$awk_script" /proc/mdstat
+
+echo -e "${WHITE}+---------------------------------------------+${NC}"

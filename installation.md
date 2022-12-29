@@ -1,11 +1,32 @@
 
 # Installation
 
-Installer la debian à partir du live USB.
-https://wiki.debian.org/fr/DebianInstall
+- https://wiki.debian.org/fr/DebianInstall
+- https://yunohost.org/fr/install/hardware:vps_debian
 
 
-# Partitionnement en RAID 5
+Installer la debian à partir du live USB. (Balena Etcher permet de créer un liveUSB à partir ISO debian netinstall)
+
+
+Mettre un mot de passe root et ne pas créer d'utilisateur.
+
+Ensuite installer Yunohost (en tant que root) :
+```bash
+apt install curl
+curl https://install.yunohost.org | bash
+```
+
+Réaliser la post installation :
+```bash
+yunohost tools postinstall
+```
+
+# Partitionnement des disques
+
+## Partitionnement en RAID 5 avec LVM
+
+<span style="color:red;">L'usage de RAID 5 avec LVM semble avoir posé des problèmes et empêche de correctement redimensionner les partitions.
+On utilisera donc une solution de partitionnement avec btrf sur RAID 5 logiciel.</span>
 
 - https://doc.ubuntu-fr.org/raid_logiciel
 - https://linuxfr.org/news/gestion-de-volumes-raid-avec-lvm
@@ -47,10 +68,30 @@ Mettre dans le fstab :
 
 ```
 
+# Partitionnement avec btrfs et RAID
+
+- https://linuxhint.com/btrfs-filesystem-mount-options/
+- https://btrfs.readthedocs.io/en/latest/Administration.html
+- https://debian-facile.org/doc:systeme:btrfs
+- https://blog.flozz.fr/2022/05/22/btrfs-revolution-ou-catastrophe-ou-en-est-on-aujourdhui/
+
+
+On installe le système comme suit :
+- 1 disque SSD contenant les partitions :
+   - /
+   - swap
+   - /var/lib/mysql
+- 3 disques sur RAID 5 contentant les partitions :
+   - /home
+
+L'ensemble des partitions seront formatées en btrfs pour plus de performances.
+
+Mettre les options supplémentaires :
+- /var/lib/mysql : noatime nodev noexec
 
 # Améliorer lisibilité des disques avec UDEV
 
-Permet de définir des liens symboliques dans /dev basé sur le numéro de port SATA
+Permet de définir des liens symboliques dans /dev basé sur le numéro de port SATA et sur le port USB utiltisé
 
 - https://linux.die.net/man/8/udev
 - https://wiki.debian.org/Persistent_disk_names
@@ -82,6 +123,9 @@ GOTO="END_20_DISK_BAY"
 
 - https://wiki.debian-fr.xyz/Smartmontools
 
+```bash
+sudo apt install smartmontools
+```
 
 # Sécurisation
 

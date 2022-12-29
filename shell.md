@@ -5,32 +5,21 @@ Liquidprompt permet de changer le Prompt Bash ou Zsh pour ajouter plein d'infos 
 - https://github.com/nojhan/liquidprompt
 - https://github.com/pyenv/pyenv/wiki/Unix-shell-initialization
 
-Installer liguidprompt :
+Installer liguidprompt et créer configuration initiale :
 
 ```bash
-apt install liquidprompt
+sudo apt install liquidprompt
 cd /usr/share/liquidprompt
+cp liquidpromptrc-dist /etc/liquidpromptrc
 ```
-
-copier **liquidpromptrc-dist** dans **/etc/liquidpromptrc**
-
-créer le fichier **/etc/profile.d/liquidprompt.sh** :
-
-```bash
-# Chargement de liquidprompt pour tous les utilisateurs bash
-. /usr/share/liquidprompt/liquidprompt
-```
-
-Ajouter le fichier aliases.sh dans /etc/profile.d/ contenant tous les alias utiles
-
-Ajouter le fichier dircolors.sh dans /etc/profile.d/
-
+Ajouter les fichiers suivants dans **/etc/profile.d/** :
+- [liquidprompt.sh](etc/profile.d/liquidprompt.sh)
+- [aliases.sh](etc/profile.d/aliases.sh)
+- [dircolors.sh](etc/profile.d/dircolors.sh)
 
 # Oh My ZSH
 
 Oh my Zsh est une extension à Zsh permettant d'ajouter beaucoup de fonctionnalités interressantes comme des prompt sympa, des alias et des fonctions très utiles.
-
-
 
 ## Installation Zsh et configuration des users
 
@@ -65,9 +54,9 @@ cd /opt/antigen
 curl -L git.io/antigen > antigen.zsh
 ```
 
-Création du fichier de configuration Antigen [/opt/antigen/antigenrc](./opt/antigen/antigenrc)
-
-Création du script de chargement antigen [/opt/antigen/load-antigen.zsh](./opt/antigen/load-antigen.zsh)
+Installer les fichiers suivants dans **/opt/antigen/** :
+- Fichier de configuration Antigen [antigenrc](./opt/antigen/antigenrc)
+- Script de chargement antigen [load-antigen.zsh](./opt/antigen/load-antigen.zsh)
 
 Chargement de antigen dans le fichier **/etc/zsh/zshrc**. Ajouter les lignes suivantes à la fin :
 ```bash
@@ -87,4 +76,10 @@ Permet d'afficher l'état des partitions et du système à la connexion.
 - https://wordpress.entropy.nu/index.php/2020/05/13/activate-debian-10-buster-dynamic-motd/
 
 
-Voir les fichiers [etc/update-motd.d](./etc/update-motd.d/)
+Installer les fichiers [etc/update-motd.d](./etc/update-motd.d/) dans **/etc/update-motd.d/**.
+Penser à les rendre exécutables.
+
+Pour supprimer le message de Warning de Debian (en tant que root):
+```bash
+echo "" > /etc/motd
+```
