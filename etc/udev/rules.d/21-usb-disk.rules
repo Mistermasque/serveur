@@ -1,0 +1,90 @@
+# L'identification des disques USB est plus complexe que pour le port SATA car si plusieurs
+# disques sont connectés sur les ports USB, le 1er prendra la valeur ...host6/target6...
+# puis le suivant ...host7/target... et ainsi de suite. Il faut donc élargir la règle
+
+# Identification du disque connecté au port USB frontal du haut identifié à l'origine par /dev/sde
+# résultat de la commande udevadm info --query=path --name=/dev/sde
+# /devices/pci0000:00/0000:00:1a.0/usb1/1-1/1-1.2/1-1.2:1.0/host6/target6:0:0/6:0:0:0/block/sde
+KERNEL=="sd?", SUBSYSTEM=="block", \
+DEVPATH=="*/usb1/1-1/1-1.2/1-1.2:1.0*", \
+SYMLINK+="hdd_usb_front_haut", \
+RUN+="/usr/bin/logger Disque connecté port USB front du haut KERNEL=$kernel, DEVPATH=$devpath" \
+GOTO="END_21_USB_DISK"
+
+# Les partitions du disque sur front USB haut
+KERNEL=="sd?*", SUBSYSTEM=="block", \
+DEVPATH=="*/usb1/1-1/1-1.2/1-1.2:1.0*", \
+SYMLINK+="hdd_usb_front_haut_%n"
+
+# Identification du disque connecté au port USB frontal du bas identifié à l'origine par /dev/sde
+# résultat de la commande udevadm info --query=path --name=/dev/sde
+# /devices/pci0000:00/0000:00:1a.0/usb1/1-1/1-1.1/1-1.1:1.0/host6/target6:0:0/6:0:0:0/block/sde
+KERNEL=="sd?", SUBSYSTEM=="block", \
+DEVPATH=="*/usb1/1-1/1-1.1/1-1.1:1.0*", \
+SYMLINK+="hdd_usb_front_bas", \
+RUN+="/usr/bin/logger Disque connecté port USB front du bas KERNEL=$kernel, DEVPATH=$devpath" \
+GOTO="END_21_USB_DISK"
+
+# Les partitions du disque sur front USB bas
+KERNEL=="sd?*", SUBSYSTEM=="block", \
+DEVPATH=="*/usb1/1-1/1-1.1/1-1.1:1.0*", \
+SYMLINK+="hdd_usb_front_bas_%n"
+
+
+# Identification du disque connecté au port USB arrière du bas gauche identifié à l'origine par /dev/sde
+# résultat de la commande udevadm info --query=path --name=/dev/sde
+# /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/host6/target6:0:0/6:0:0:0/block/sde
+KERNEL=="sd?", SUBSYSTEM=="block", \
+DEVPATH=="/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0*", \
+SYMLINK+="hdd_usb_rear_bas_gauche", \
+RUN+="/usr/bin/logger Disque connecté port USB arrirère du bas gauche KERNEL=$kernel, DEVPATH=$devpath" \
+GOTO="END_21_USB_DISK"
+
+# Les partitions du disque sur USB arrière du bas gauche
+KERNEL=="sd?*", SUBSYSTEM=="block", \
+DEVPATH=="/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0*", \
+SYMLINK+="hdd_usb_rear_bas_gauche_%n"
+
+# Identification du disque connecté au port USB arrière du haut gauche identifié à l'origine par /dev/sde
+# résultat de la commande udevadm info --query=path --name=/dev/sde
+# /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.4/2-1.4:1.0/host6/target6:0:0/6:0:0:0/block/sde
+KERNEL=="sd?", SUBSYSTEM=="block", \
+DEVPATH=="/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.4/2-1.4:1.0*", \
+SYMLINK+="hdd_usb_rear_haut_gauche", \
+RUN+="/usr/bin/logger Disque connecté port USB arrirère du haut gauche KERNEL=$kernel, DEVPATH=$devpath" \
+GOTO="END_21_USB_DISK"
+
+# Les partitions du disque sur USB arrière du haut gauche
+KERNEL=="sd?*", SUBSYSTEM=="block", \
+DEVPATH=="/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.4/2-1.4:1.0*", \
+SYMLINK+="hdd_usb_rear_haut_gauche_%n"
+
+# Identification du disque connecté au port USB arrière du bas droite identifié à l'origine par /dev/sde
+# résultat de la commande udevadm info --query=path --name=/dev/sde
+# /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/host6/target6:0:0/6:0:0:0/block/sde
+KERNEL=="sd?", SUBSYSTEM=="block", \
+DEVPATH=="/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0*", \
+SYMLINK+="hdd_usb_rear_bas_droite", \
+RUN+="/usr/bin/logger Disque connecté port USB arrirère du bas droite KERNEL=$kernel, DEVPATH=$devpath" \
+GOTO="END_21_USB_DISK"
+
+# Les partitions du disque sur USB arrière du bas droite
+KERNEL=="sd?*", SUBSYSTEM=="block", \
+DEVPATH=="/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0*", \
+SYMLINK+="hdd_usb_rear_bas_droite_%n"
+
+# Identification du disque connecté au port USB arrière du haut droite identifié à l'origine par /dev/sde
+# résultat de la commande udevadm info --query=path --name=/dev/sde
+# /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.1/2-1.1:1.0/host6/target6:0:0/6:0:0:0/block/sde
+KERNEL=="sd?", SUBSYSTEM=="block", \
+DEVPATH=="/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.1/2-1.1:1.0*", \
+SYMLINK+="hdd_usb_rear_haut_droite", \
+RUN+="/usr/bin/logger Disque connecté port USB arrirère du haut droite KERNEL=$kernel, DEVPATH=$devpath" \
+GOTO="END_21_USB_DISK"
+
+# Les partitions du disque sur USB arrière du haut droite
+KERNEL=="sd?*", SUBSYSTEM=="block", \
+DEVPATH=="/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.1/2-1.1:1.0*", \
+SYMLINK+="hdd_usb_rear_haut_droite_%n"
+
+LABEL="END_21_USB_DISK"

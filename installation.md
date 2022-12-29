@@ -64,8 +64,11 @@ Exemple de retour
 devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sdb
 ```
 
-Créer le fichier [**20-disk-bays.rules**](./etc/udev/rules.d/20-disk-bays.rules).  Créer une règle :
+Créer les fichiers suivants dans **/etc/udev/rules.d/** :
+- [**20-disk-bays.rules**](./etc/udev/rules.d/20-disk-bays.rules).
+- [**21-usb-disk.rules**](./etc/udev/rules.d/21-usb-disk.rules).
 
+Exemple de règle :
 ```conf
 KERNEL=="sd?", SUBSYSTEM=="block", \
 DEVPATH=="/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0*", \
