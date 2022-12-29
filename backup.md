@@ -219,3 +219,14 @@ Activer la rotation des logs :
 cd /etc/logrotate.d
 sudo ln -sfn /opt/rclonebackup/rclonebackup.logrotate rclonebackup
 ```
+
+# Optimisation
+
+- https://yunohost.org/fr/backup/include_exclude_files
+
+On désactive les sauvegarde du dossier Multimedia pour ne pas alourdir la sauvegarde.
+
+```bash
+cd /home/yunohost.multimedia
+touch .nobackup
+```
