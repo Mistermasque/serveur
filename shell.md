@@ -4,6 +4,7 @@ Liquidprompt permet de changer le Prompt Bash ou Zsh pour ajouter plein d'infos 
 
 - https://github.com/nojhan/liquidprompt
 - https://github.com/pyenv/pyenv/wiki/Unix-shell-initialization
+- https://forum.yunohost.org/t/tuto-comment-installer-oh-my-zsh-how-to-install-oh-my-zsh/4116
 
 Installer liguidprompt et créer configuration initiale :
 
@@ -29,12 +30,25 @@ apt install zsh
 ```
 
 On l'active pour le user et pour root :
-
 ```bash
 chsh -s $(which zsh) # Pour le user courant
 sudo chsh -s $(which zsh) # pour root
 sudo chsh -s $(which zsh) <user> # pour le user <user>
 ```
+
+<span style="color:orange">Attention, dans le cas de Yunohost, les utilisateurs sont créés dans le LDAP, notamment pour le user admin.</span>
+Pour changer le shell par défaut, éditer le fichier **/etc/nslcd.conf** en le sauvegardant :
+```bash
+sudo cp /etc/nslcd.conf /etc/nslcd.conf.orig
+nano /etc/nslcd.conf
+```
+
+Ajouter à la fin du fichier :
+```conf
+map passwd loginShell "/usr/bin/zsh"
+```
+
+Rebooter le serveur pour que cela soit pris en compte.
 
 ## Installation Antigen
 
