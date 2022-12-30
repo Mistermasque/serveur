@@ -28,3 +28,7 @@ Changer la configuration dans l'interface d'admin de Nextcloud (Paramètres de b
 - https://help.nextcloud.com/t/nextcloud-having-lots-of-trouble-handling-large-amount-of-files/22364
 
 Nextcloud suit déjà les optimisations recommandées (mise en cache avec REDIS, etc.)
+
+# Customisations
+
+Ajouter le script de lancement des commandes [occ](./usr/bin/occ) dans **/usr/bin/**. Ne pas oublier de le rendre exécutable.

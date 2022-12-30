@@ -1,0 +1,13 @@
+#!/bin/bash
+# This script allows you to launch occ command according to Nextcloud configuration with Yunohost.
+
+OCC='/var/www/nextcloud/occ'
+PHP='/usr/bin/php8.0'
+USER='nextcloud'
+
+if [ $( whoami ) != 'root' ]; then
+        echo "You need to be root !" >&2
+        exit 1
+fi
+
+sudo -u $USER $PHP --define apc.enable_cli=1 $OCC $@
