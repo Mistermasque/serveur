@@ -1,4 +1,4 @@
-# Remplacer un disque défectueux
+# LVM - Remplacer un disque défectueux
 
 - https://www.systutorials.com/docs/linux/man/7-lvmraid/
 
@@ -57,6 +57,8 @@ vgdisplay
 
 # Réduire la taille d'un disque logique
 
+- https://wiki.vpsget.com/index.php/Extend_or_Reduce_size_of_ext3/ext4_LVM_partition_in_Centos
+
 Vérifier le volume à réduire :
 ```bash
 e2fsck -fy /dev/vg_system/lv_data
@@ -108,3 +110,7 @@ update-grub
 ```
 
 Modifier le fstab après réintégration du disque.
+
+# RAID 
+
+- https://www.ducea.com/2009/03/08/mdadm-cheat-sheet/

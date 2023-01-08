@@ -32,3 +32,10 @@ Nextcloud suit déjà les optimisations recommandées (mise en cache avec REDIS,
 # Customisations
 
 Ajouter le script de lancement des commandes [occ](./usr/bin/occ) dans **/usr/bin/**. Ne pas oublier de le rendre exécutable.
+
+# Résolution des problèmes
+
+Si on a une désynchronisation entre ce qui est affiché dans l'interface web et les fichiers sur le disque dur, lancer la commande :
+```bash
+sudo occ files:scan &lt;user&gt;
+```
