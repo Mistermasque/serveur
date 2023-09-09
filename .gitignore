@@ -1,3 +1,3 @@
 config/*
 opt/mysqlbackup/mysqlbackup.config
-opt/rclonebackup/rclonebackup.config
+opt/rclonebackup/rclonebackup-config.toml

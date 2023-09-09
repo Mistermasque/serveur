@@ -1,0 +1,23 @@
+
+# Example config for rclonebackup.
+# Rename this file by rclonebackup-config.toml
+
+# Defines sections for remote repositories
+# each entry must exists in remotes subsections in this file
+# WARNING : do not use space inside names
+# In this example sections [remotes.remote1] and [remotes.remote2] must exists
+remote_configs = ['remote1', 'remote2']
+
+[remotes]
+
+    # remote1 is set in remotes array
+    [remotes.remote1]
+    name = 'google-drive' # rclone Remote name (required)
+    local_path = '/home/backup/' # local path to sync with remote path (required) DON'T FORGET to add slash at the end
+    remote_path = '/backup' # remote path to sync with local path (required) DON'T FORGET to add slash at the end
+    sync_younger_than = '2M' # Sync only files younger than 2 month (optionnal) see https://rclone.org/docs/#time-option
+
+    [remotes.remote2]
+    name = 'pcloud'
+    local_path = '/home/photos/'
+    remote_path = '/backup'
