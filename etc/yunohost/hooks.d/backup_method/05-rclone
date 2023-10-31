@@ -1,6 +1,21 @@
 #!/bin/bash
 set -euo pipefail
 
+# Get yunohost helpers
+source /usr/share/yunohost/helpers
+
+# remote size in bytes
+REMOTE_SIZE=2199023255552
+# rclone remote name (without ":")
+RCLONE_REMOTE="pcloud-crypt"
+# set verbosity (true|false)
+VERBOSE=true
+# log file
+LOGFILE="/var/log/yunohost/backup-rclone.log"
+# Send mail to admins group
+MAIL="admins"
+
+# Params sent by yunohost backup script
 workDir="$2"
 name="$3"
 repo="$4"
@@ -9,29 +24,160 @@ description="$6"
 
 infoFile="${repo}/${name}.info.json"
 archiveFile="${repo}/${name}.tar.gz"
-rcloneDest="remote:${repo}/"
+rcloneDest="${RCLONE_REMOTE}:${repo}/"
 
-# Cette méthode créé l'archive tel que Yunohost l'attend
+# Archive size file after creation
+archiveSize=0
+
+
+# Message function
+# $1 : message to print
+# $2 : message type error|warning|verbose|info|<null>
+msg() {
+    local msg="$1"
+    local type="${2-info}"
+    local prefix=''
+    local now=''
+
+    case "${type}" in
+        'error')
+            prefix="[ERROR] "
+            ynh_print_err --message="$msg"
+        ;;
+        'warning')
+            prefix="[WARN] "
+            ynh_print_warn --message="$msg"
+        ;;
+        'verbose')
+            if [[ $VERBOSE = false ]]; then
+                return
+            fi
+        ;;
+        'info')
+            ynh_print_info --message="$msg"
+        ;;
+        *)
+            ynh_print_err --message="[ERROR] msg type '${type}' unknown"
+            exit 1
+        ;;
+    esac
+
+    now="$(date "+%Y-%m-%d %H:%M:%S") "
+    printf '%s%s%s\n' "$now" "$prefix" "$msg" >> "$LOGFILE"
+}
+
+# Function to tell to abord script
+# Allows to send a message to mail before exit
+# $1 : abording message
+abord() {
+    local msg="$1"
+    msg "$msg" "error"
+
+    if [[ -n $MAIL ]]; then
+        echo "$msg" | mail -s "Yunohost backup rclone - ERROR" $MAIL
+    fi
+
+    exit 1
+}
+
+# Create archive file as yunohost expect
+# Set global archiveSize var
 function createLocalArchive() {
     cd "$workDir"
+    msg "Creating info file '${infoFile}'..."
     cp info.json "${infoFile}"
-    tar cvzf "${archiveFile}" *
-    if ! gzip -t "${archiveFile}"; then
-        echo "Error while creating archive file ${archiveFile}. The compressed file is corrupted !" >&2
-        exit 1
+    msg "Info file '${infoFile}' created"
+    msg "Creating archive file '${archiveFile}'..."
+    
+    local args="cvf"
+    if [[ $VERBOSE = true ]]; then
+        args="cvzf"
     fi
+
+    if ! tar $args "${archiveFile}" * >> "$LOGFILE" 2>&1; then
+        abord "Error while creating archive file '${archiveFile}'"
+    fi
+
+    if ! gzip -t "${archiveFile}"; then
+        abord "Error while creating archive file ${archiveFile}. The compressed file is corrupted !"
+    fi
+    archiveSize=$(du -sb "${archiveFile}" | awk "{ print \$1 }")
+
+    msg "archive file '${archiveFile}' created. Size = ${archiveSize} bytes"
+}
+
+# Get available disk space in bytes in rclone remote
+function rcloneGetAvalaibleDiskSpace() {
+    local _rcloneDiskUsedInBytes=$(rclone size pcloud-crypt: | awk "{ if (\$2 == \"size:\") { print substr(\$5,2) } }")
+    echo $(expr $REMOTE_SIZE - $_rcloneDiskUsedInBytes)
 }
 
 function rcloneCopy() {
-    rclone copy -v "$infoFile" "${rcloneDest}"
-    rclone copy -v "$archiveFile" "${rcloneDest}"
+    # Check if there is enough space on remote to tranfert archive and trying to make room
+    local _rcloneAvailableSpace=$(rcloneGetAvalaibleDiskSpace)
+    local verboseOption=""
+    if [[ $VERBOSE = true ]]; then
+        verboseOption="-v"
+    fi
+
+    if [[ $_rcloneAvailableSpace -lt $archiveSize ]]; then
+        msg "There is not enough space on remote to transfert archive file (space left = ${_rcloneAvailableSpace} bytes). Trying to free space on remote..." "warning"
+
+        if ! rclone delete $verboseOption "${rcloneDest}" --min-age 1M --min-size ${archiveSize}B >> "$LOGFILE" 2>&1; then
+            msg "Can't make room on remote" "warning"
+        fi
+    fi
+
+    _rcloneAvailableSpace=$(rcloneGetAvalaibleDiskSpace)
+    if [[ $_rcloneAvailableSpace -lt $archiveSize ]]; then
+        abord "Can't make enough room on remote. (space left = ${_rcloneAvailableSpace} bytes after trying to delete old archive). Abording"
+    fi
+
+    msg "Copy files on remote..."
+    if ! rclone copy $verboseOption "$infoFile" "${rcloneDest}" >> "$LOGFILE" 2>&1 || ! rclone copy -v "$archiveFile" "${rcloneDest}" >> "$LOGFILE" 2>&1; then
+        abord "Error while copying files on remote"
+    fi
+    msg "Files copied on remote !"
+}
+
+# Get available disk space in bytes for a submitted directory
+# @param $1 string path to test
+function getAvalaibleDiskSpace() {
+    local _path="$1"
+
+    if [[ ! -e $_path ]]; then
+        abord "getAvalaibleDiskSpace path '$_path' provided doesn't exists !"
+    fi
+
+    local _mountPoint=$(findmnt -T "$_path" -o SOURCE -n)
+    df --output="source,avail" "$_mountPoint" | awk "{ if (\$1 == \"$_mountPoint\") { print \$2 } }"
 }
 
 # Supprime toutes les archives plus anciennes que 3 mois en local et distant
 function clean() {
-    numberOfDays6MonthAgo=$(( ( $(date '+%s') - $(date -d '3 months ago' '+%s') ) / 86400 ))
-    find "$repo" -mtime +$numberOfDays6MonthAgo -type f -delete
-    rclone delete -v "${rcloneDest}" --min-age 3M
+    local numberOfDays3MonthAgo=$(( ( $(date '+%s') - $(date -d '3 months ago' '+%s') ) / 86400 ))
+    find "$repo" -mtime +$numberOfDays3MonthAgo -type f -delete
+}
+
+# main function for backup to rclone
+function main() {
+    # Check if there is enough space locally to create archive file
+    local _availableSpaceOnDisk=$(getAvalaibleDiskSpace "${repo}")
+    if [[ $_availableSpaceOnDisk -lt $size ]]; then
+        abord "There is no space left on local disk to create archive (tmp size = ${size} bytes, space left = ${_availableSpaceOnDisk} bytes"
+    fi
+
+    createLocalArchive
+    rcloneCopy
+    clean
+
+    message="Archive '${archiveFile}' size = ${archiveSize} bytes created and copied on remote '${rcloneDest}' !"
+    msg "$message"
+
+    if [[ -n $MAIL && $VERBOSE = true ]]; then
+        now="$(date "+%Y-%m-%d %H:%M:%S")"
+        echo "$now $message" | mail -s "Yunohost backup rclone - OK" $MAIL
+    fi
 }
 
 case "$1" in
@@ -40,9 +186,7 @@ case "$1" in
         true
         ;;
     backup)
-        createLocalArchive
-        rcloneCopy
-        clean
+        main
         ;;
     *)
         echo "hook called with unknown argument \`$1'" >&2

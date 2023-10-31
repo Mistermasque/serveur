@@ -195,6 +195,18 @@ sudo ln -sfn /opt/mysqlbackup/mysqlbackup.logrotate mysqlbackup
 
 Prerequis : avoir déja installé [rclone](#installation).
 
+### Backup avec yunohost
+Ce script assure la sauvegarde avec yunohost et envoie le résultat vers rclone et garde le fichier en local.
+
+Installer les fichiers suivants :
+- [/etc/yunohost/hooks.d/backup_method/05-rclone](./etc/yunohost/hooks.d/backup_method/05-rclone) : script de sauvegarde rclone
+- [/etc/logrotate.d/yunohost-backup-rclone](./etc/logrotate.d/yunohost-backup-rclone) : configuration du fichier de log avec logrotate
+- [/etc/cron.d/yunohost-backup-rclone](./etc/cron.d/yunohost-backup-rclone) : lance la sauvegarde auto pour le backup rclone
+
+
+### Backup avec script personnalisé
+Ce script permet de synchroniser un répertoire local avec un distant avec rclone.
+
 Installer tous les fichiers du dossier [rclonebackup](./opt/rclonebackup/) dans **/opt/rclonebackup**.
 
 Créer le fichier de configuration
