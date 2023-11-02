@@ -108,7 +108,7 @@ function createLocalArchive() {
     
     msg "Creating archive file '${LOCAL_ARCHIVE_FILE}'..."
     
-    local args="cvf"
+    local args="czf"
     if [[ $VERBOSE = true ]]; then
         args="cvzf"
     fi

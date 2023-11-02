@@ -27,7 +27,6 @@ ynh_backup "/etc/update-motd.d/00-banner"
 ynh_backup "/etc/update-motd.d/15-sysinfo"
 ynh_backup "/etc/update-motd.d/20-smart"
 ynh_backup "/etc/update-motd.d/21-raid"
-ynh_backup "/etc/update-motd.d/22-lvm"
 ynh_backup "/etc/update-motd.d/colors.sh"
 
 # shell and profile.d
