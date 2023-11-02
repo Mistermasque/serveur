@@ -67,6 +67,8 @@ ynh_restore_file "/etc/yunohost/hooks.d/backup/99-conf_custom"
 ynh_restore_dest "conf/custom/yunohost-restore-conf"
 ynh_restore_file "/etc/yunohost/hooks.d/restore/99-conf_custom"
 
+ynh_restore_dest "conf/custom/systemd-system"
+ynh_restore_file "/etc/systemd/system/yunohost-backup-usb-@.service"
 
 # Samba
 app="custom_samba" # This variable is important for the following helper

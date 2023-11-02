@@ -1,0 +1,7 @@
+[Unit]
+Description=Backup to USB Flash Disk
+BindsTo=dev-%i.device
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/yunohost backup create --method='usb'

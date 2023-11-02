@@ -132,8 +132,7 @@ function createLocalArchive() {
 
 # Get available disk space in bytes in rclone remote
 function rcloneGetAvalaibleDiskSpace() {
-    local _rcloneDiskUsedInBytes=$(rclone size pcloud-crypt: | awk "{ if (\$2 == \"size:\") { print substr(\$5,2) } }")
-    echo $(expr $REMOTE_SIZE - $_rcloneDiskUsedInBytes)
+    rclone about --full ${RCLONE_REMOTE}: | awk "{ if (\$1 == \"Free:\" ) { print \$2 } }"
 }
 
 function rcloneCopy() {

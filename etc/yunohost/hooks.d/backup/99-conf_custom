@@ -61,6 +61,9 @@ ynh_backup "/etc/yunohost/hooks.d/backup/99-conf_custom"
 ynh_backup_dest "conf/custom/yunohost-restore-conf"
 ynh_backup "/etc/yunohost/hooks.d/restore/99-conf_custom"
 
+ynh_backup_dest "conf/custom/systemd-system"
+ynh_backup "/etc/systemd/system/yunohost-backup-usb-@.service"
+
 # Samba
 ynh_backup_dest "conf/custom/samba"
 ynh_backup "/etc/samba"
