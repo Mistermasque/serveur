@@ -31,7 +31,7 @@ Nextcloud suit déjà les optimisations recommandées (mise en cache avec REDIS,
 
 # Customisations
 
-Ajouter le script de lancement des commandes [occ](./usr/bin/occ) dans **/usr/bin/**. Ne pas oublier de le rendre exécutable.
+Ajouter le script de lancement des commandes [occ](./usr/local/bin/occ) dans **/usr/local/bin/**. Ne pas oublier de le rendre exécutable.
 
 # Résolution des problèmes
 

@@ -1,3 +1,13 @@
+# Sauvegardes custom Yunohost
+
+https://yunohost.org/fr/backup/include_exclude_files
+
+
+Installer les fichiers suivants pour avoir toutes les conf dans la sauvegarde de Yunohost :
+- [99-conf_custom (backup)](./etc/yunohost/hooks.d/backup/99-conf_custom) dans **/etc/yunohost/hooks.d/backup/**.
+- [99-conf_custom (restore)](./etc/yunohost/hooks.d/restore/99-conf_custom) dans **/etc/yunohost/hooks.d/restore/**.
+
+
 # Rclone
 
 Rclone est un utilitaire de synchronisation permettant de se connecter à de nombreux services via la ligne de commande. Nous utiliserons le service pclone.

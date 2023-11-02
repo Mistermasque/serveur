@@ -5,34 +5,36 @@ set -euo pipefail
 source /usr/share/yunohost/helpers
 
 # remote size in bytes
-REMOTE_SIZE=2199023255552
+declare -r REMOTE_SIZE=2199023255552
 # rclone remote name (without ":")
-RCLONE_REMOTE="pcloud-crypt"
+declare -r RCLONE_REMOTE="pcloud-crypt"
 # set verbosity (true|false)
-VERBOSE=true
+declare -r VERBOSE=true
 # log file
-LOGFILE="/var/log/yunohost/backup-rclone.log"
+declare -r LOGFILE="/var/log/yunohost/backup-rclone.log"
 # Send mail to admins group
-MAIL="admins"
+declare -r MAIL="admins"
 
 # Params sent by yunohost backup script
-workDir="$2"
-name="$3"
-repo="$4"
-size="$5"
-description="$6"
+declare -r BACKUP_TMP_REP="$2"
+declare -r BACKUP_NAME="$3"
+declare -r LOCAL_REPO="$4"
+declare -r BACKUP_SIZE="$5"
+declare -r BACKUP_DESCRIPTION="$6"
 
-infoFile="${repo}/${name}.info.json"
-archiveFile="${repo}/${name}.tar.gz"
-rcloneDest="${RCLONE_REMOTE}:${repo}/"
+declare -r INFO_FILE="${BACKUP_NAME}.info.json"
+declare -r ARCHIVE_FILE="${BACKUP_NAME}.tar.gz"
+declare -r LOCAL_INFO_FILE="${LOCAL_REPO}/${INFO_FILE}"
+declare -r LOCAL_ARCHIVE_FILE="${LOCAL_REPO}/${ARCHIVE_FILE}"
+
+declare -r RCLONE_DEST="${RCLONE_REMOTE}:${LOCAL_REPO}/"
 
 # Archive size file after creation
 archiveSize=0
 
-
 # Message function
 # $1 : message to print
-# $2 : message type error|warning|verbose|info|<null>
+# $2 : message type success|error|warning|verbose|info|<null>
 msg() {
     local msg="$1"
     local type="${2-info}"
@@ -40,6 +42,10 @@ msg() {
     local now=''
 
     case "${type}" in
+        'success')
+            prefix="[OK] "
+            ynh_print_info --message="[OK] $msg"
+            ;;
         'error')
             prefix="[ERROR] "
             ynh_print_err --message="$msg"
@@ -71,11 +77,12 @@ msg() {
 # $1 : abording message
 abord() {
     local msg="$1"
-    msg "$msg" "error"
 
     if [[ -n $MAIL ]]; then
         echo "$msg" | mail -s "Yunohost backup rclone - ERROR" $MAIL
     fi
+
+    msg "$msg" "error"
 
     exit 1
 }
@@ -83,27 +90,44 @@ abord() {
 # Create archive file as yunohost expect
 # Set global archiveSize var
 function createLocalArchive() {
-    cd "$workDir"
-    msg "Creating info file '${infoFile}'..."
-    cp info.json "${infoFile}"
-    msg "Info file '${infoFile}' created"
-    msg "Creating archive file '${archiveFile}'..."
+    # Check if there is enough space locally to create archive file
+    local _availableSpaceOnDisk=$(getAvalaibleDiskSpace "${LOCAL_REPO}")
+    if [[ $_availableSpaceOnDisk -lt $BACKUP_SIZE ]]; then
+        abord "There is no space left on local disk to create archive (tmp size = ${BACKUP_SIZE} bytes, space left = ${_availableSpaceOnDisk} bytes"
+    fi
+
+    cd "$BACKUP_TMP_REP"
+    msg "Creating info file '${LOCAL_INFO_FILE}'..."
+    if [[ ! -f ${LOCAL_INFO_FILE} ]]; then
+        cp info.json "${LOCAL_INFO_FILE}"
+        msg "Info file '${LOCAL_INFO_FILE}' created" "success"
+    else
+        msg "Info file '${LOCAL_INFO_FILE}' already exists" "warning"
+    fi
+    
+    msg "Creating archive file '${LOCAL_ARCHIVE_FILE}'..."
     
     local args="cvf"
     if [[ $VERBOSE = true ]]; then
         args="cvzf"
     fi
 
-    if ! tar $args "${archiveFile}" * >> "$LOGFILE" 2>&1; then
-        abord "Error while creating archive file '${archiveFile}'"
-    fi
+    if [[ ! -f ${LOCAL_ARCHIVE_FILE} ]]; then
+        if ! tar $args "${LOCAL_ARCHIVE_FILE}" * >> "$LOGFILE" 2>&1; then
+            abord "Error while creating archive file '${LOCAL_ARCHIVE_FILE}'"
+        fi
 
-    if ! gzip -t "${archiveFile}"; then
-        abord "Error while creating archive file ${archiveFile}. The compressed file is corrupted !"
+        if ! gzip -t "${LOCAL_ARCHIVE_FILE}"; then
+            abord "Error while creating archive file ${LOCAL_ARCHIVE_FILE}. The compressed file is corrupted !"
+        fi
+        msg "Archive file '${LOCAL_ARCHIVE_FILE}' created !" "success"
+    else
+        msg "Archive file '${LOCAL_ARCHIVE_FILE}' already exists" "warning"
     fi
-    archiveSize=$(du -sb "${archiveFile}" | awk "{ print \$1 }")
+    
+    archiveSize=$(du -sb "${LOCAL_ARCHIVE_FILE}" | awk "{ print \$1 }")
 
-    msg "archive file '${archiveFile}' created. Size = ${archiveSize} bytes"
+    msg "Archive file size = ${archiveSize} bytes"
 }
 
 # Get available disk space in bytes in rclone remote
@@ -123,7 +147,7 @@ function rcloneCopy() {
     if [[ $_rcloneAvailableSpace -lt $archiveSize ]]; then
         msg "There is not enough space on remote to transfert archive file (space left = ${_rcloneAvailableSpace} bytes). Trying to free space on remote..." "warning"
 
-        if ! rclone delete $verboseOption "${rcloneDest}" --min-age 1M --min-size ${archiveSize}B >> "$LOGFILE" 2>&1; then
+        if ! rclone delete $verboseOption "${RCLONE_DEST}" --min-age 1M --min-size ${archiveSize}B >> "$LOGFILE" 2>&1; then
             msg "Can't make room on remote" "warning"
         fi
     fi
@@ -134,10 +158,10 @@ function rcloneCopy() {
     fi
 
     msg "Copy files on remote..."
-    if ! rclone copy $verboseOption "$infoFile" "${rcloneDest}" >> "$LOGFILE" 2>&1 || ! rclone copy -v "$archiveFile" "${rcloneDest}" >> "$LOGFILE" 2>&1; then
+    if ! rclone copy $verboseOption "$LOCAL_INFO_FILE" "${RCLONE_DEST}" >> "$LOGFILE" 2>&1 || ! rclone copy $verboseOption "$LOCAL_ARCHIVE_FILE" "${RCLONE_DEST}" >> "$LOGFILE" 2>&1; then
         abord "Error while copying files on remote"
     fi
-    msg "Files copied on remote !"
+    msg "Files copied on remote !" "success"
 }
 
 # Get available disk space in bytes for a submitted directory
@@ -150,28 +174,29 @@ function getAvalaibleDiskSpace() {
     fi
 
     local _mountPoint=$(findmnt -T "$_path" -o SOURCE -n)
-    df --output="source,avail" "$_mountPoint" | awk "{ if (\$1 == \"$_mountPoint\") { print \$2 } }"
+    df -B1 --output="source,avail" "$_mountPoint" | awk "{ if (\$1 == \"$_mountPoint\") { print \$2 } }"
 }
 
 # Supprime toutes les archives plus anciennes que 3 mois en local et distant
 function clean() {
+    local _verboseArg=''
+    if [[ $VERBOSE = true ]]; then
+        _verboseArg='-print'
+    fi
+
     local numberOfDays3MonthAgo=$(( ( $(date '+%s') - $(date -d '3 months ago' '+%s') ) / 86400 ))
-    find "$repo" -mtime +$numberOfDays3MonthAgo -type f -delete
+    find "$LOCAL_REPO" -mtime +$numberOfDays3MonthAgo -type f -delete $_verboseArg >> "$LOGFILE"
 }
 
 # main function for backup to rclone
 function main() {
-    # Check if there is enough space locally to create archive file
-    local _availableSpaceOnDisk=$(getAvalaibleDiskSpace "${repo}")
-    if [[ $_availableSpaceOnDisk -lt $size ]]; then
-        abord "There is no space left on local disk to create archive (tmp size = ${size} bytes, space left = ${_availableSpaceOnDisk} bytes"
-    fi
-
+    
+    msg "----- Begin backup yunohost to external rclone -----"
     createLocalArchive
     rcloneCopy
     clean
 
-    message="Archive '${archiveFile}' size = ${archiveSize} bytes created and copied on remote '${rcloneDest}' !"
+    message="Archive '${LOCAL_ARCHIVE_FILE}' size = ${archiveSize} bytes created and copied on remote '${RCLONE_DEST}' !"
     msg "$message"
 
     if [[ -n $MAIL && $VERBOSE = true ]]; then

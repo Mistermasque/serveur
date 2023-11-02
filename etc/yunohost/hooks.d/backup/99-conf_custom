@@ -1,0 +1,71 @@
+#!/bin/bash
+
+# Source YNH helpers
+source /usr/share/yunohost/helpers
+
+ynh_backup_dest (){
+    YNH_CWD="${YNH_BACKUP_DIR%/}/$1"
+    mkdir -p $YNH_CWD
+    cd "$YNH_CWD"
+}
+
+# Exit hook on subcommand error or unset variable
+ynh_abort_if_errors
+
+# bin
+ynh_backup_dest "conf/custom/local-bin"
+ynh_backup "/usr/local/bin/"
+
+# udev rules
+ynh_backup_dest "conf/custom/udev-rules.d"
+ynh_backup "/etc/udev/rules.d/20-disk-bays.rules"
+ynh_backup "/etc/udev/rules.d/21-usb-disk.rules"
+
+# update-motd.d
+ynh_backup_dest "conf/custom/update-motd.d"
+ynh_backup "/etc/update-motd.d/00-banner"
+ynh_backup "/etc/update-motd.d/15-sysinfo"
+ynh_backup "/etc/update-motd.d/20-smart"
+ynh_backup "/etc/update-motd.d/21-raid"
+ynh_backup "/etc/update-motd.d/22-lvm"
+ynh_backup "/etc/update-motd.d/colors.sh"
+
+# shell and profile.d
+ynh_backup_dest "conf/custom/profile.d"
+ynh_backup "/etc/profile.d/aliases.sh"
+ynh_backup "/etc/profile.d/dircolors.sh"
+ynh_backup "/etc/profile.d/liquidprompt.sh"
+
+ynh_backup_dest "conf/custom/antigen"
+ynh_backup "/opt/antigen/"
+ynh_backup "/etc/nslcd.conf"
+ynh_backup "/etc/zsh/zshrc"
+
+# backups hooks and methods
+ynh_backup_dest "conf/custom/rclone"
+ynh_backup "/root/.config/rclone/"
+
+ynh_backup_dest "conf/custom/cron.d"
+ynh_backup "/etc/cron.d/yunohost-backup-rclone"
+
+ynh_backup_dest "conf/custom/logrotate.d"
+ynh_backup "/etc/logrotate.d/yunohost-backup-rclone"
+ynh_backup "/etc/logrotate.d/yunohost-backup-usb"
+
+ynh_backup_dest "conf/custom/yunohost-backup-method"
+ynh_backup "/etc/yunohost/hooks.d/backup_method"
+
+ynh_backup_dest "conf/custom/yunohost-backup-conf"
+ynh_backup "/etc/yunohost/hooks.d/backup/99-conf_custom"
+
+ynh_backup_dest "conf/custom/yunohost-restore-conf"
+ynh_backup "/etc/yunohost/hooks.d/restore/99-conf_custom"
+
+# Samba
+ynh_backup_dest "conf/custom/samba"
+ynh_backup "/etc/samba"
+ynh_backup "/var/lib/samba"
+ynh_backup "/etc/yunohost/hooks.d/post_user_create/99-samba"
+ynh_backup "/etc/yunohost/hooks.d/post_user_delete/99-samba"
+ynh_backup --src_path="/etc/yunohost/hooks.d/post_user_update/99-samba" --not_mandatory
+

@@ -1,0 +1,295 @@
+#!/bin/bash
+set -euo pipefail
+
+# Get yunohost helpers
+source /usr/share/yunohost/helpers
+
+
+# set verbosity (true|false)
+declare -r VERBOSE=true
+# log file
+declare -r LOGFILE="/var/log/yunohost/backup-usb.log"
+# Send mail to admins group
+declare -r MAIL="admins"
+
+# Params sent by yunohost backup script
+declare -r BACKUP_TMP_REP="$2"
+declare -r BACKUP_NAME="$3"
+declare -r LOCAL_REPO="$4"
+declare -r BACKUP_SIZE="$5"
+declare -r BACKUP_DESCRIPTION="$6"
+
+declare -r INFO_FILE="${BACKUP_NAME}.info.json"
+declare -r ARCHIVE_FILE="${BACKUP_NAME}.tar.gz"
+declare -r LOCAL_INFO_FILE="${LOCAL_REPO}/${INFO_FILE}"
+declare -r LOCAL_ARCHIVE_FILE="${LOCAL_REPO}/${ARCHIVE_FILE}"
+declare -r DEST_DISK='/dev/hdd_usb_front_haut_1'
+declare -r DEST_REPO="yunohost_backup"
+
+# Mounted dest dir (without ending /) can be modified if DEST_DISK is already mounted
+mountedDest="/mnt/usb_backup"
+
+# Archive file size after creation
+archiveSize=0
+
+
+# Message function
+# $1 : message to print
+# $2 : message type success|error|warning|verbose|info|<null>
+msg() {
+    local msg="$1"
+    local type="${2-info}"
+    local prefix=''
+    local now=''
+
+    case "${type}" in
+        'success')
+            prefix="[OK] "
+            ynh_print_info --message="[OK] $msg"
+            ;;
+        'error')
+            prefix="[ERROR] "
+            ynh_print_err --message="$msg"
+        ;;
+        'warning')
+            prefix="[WARN] "
+            ynh_print_warn --message="$msg"
+        ;;
+        'verbose')
+            if [[ $VERBOSE = false ]]; then
+                return
+            fi
+        ;;
+        'info')
+            ynh_print_info --message="$msg"
+        ;;
+        *)
+            ynh_print_err --message="[ERROR] msg type '${type}' unknown"
+            exit 1
+        ;;
+    esac
+
+    now="$(date "+%Y-%m-%d %H:%M:%S") "
+    printf '%s%s%s\n' "$now" "$prefix" "$msg" >> "$LOGFILE"
+}
+
+# Function to tell to abord script
+# Allows to send a message to mail before exit
+# $1 : abording message
+abord() {
+    local msg="$1"
+
+    if [[ -n $MAIL ]]; then
+        echo "$msg" | mail -s "Yunohost backup rclone - ERROR" $MAIL
+    fi
+
+    msg "$msg" "error"
+
+    exit 1
+}
+
+# Create archive file as yunohost expect
+# Set global archiveSize var
+function createLocalArchive() {
+    # Check if there is enough space locally to create archive file
+    local _availableSpaceOnDisk=$(getAvalaibleDiskSpace "${LOCAL_REPO}")
+    if [[ $_availableSpaceOnDisk -lt $BACKUP_SIZE ]]; then
+        abord "There is no space left on local disk to create archive (tmp size = ${BACKUP_SIZE} bytes, space left = ${_availableSpaceOnDisk} bytes"
+    fi
+
+    cd "$BACKUP_TMP_REP"
+    msg "Creating info file '${LOCAL_INFO_FILE}'..."
+    if [[ ! -f ${LOCAL_INFO_FILE} ]]; then
+        cp info.json "${LOCAL_INFO_FILE}"
+        msg "Info file '${LOCAL_INFO_FILE}' created" "success"
+    else
+        msg "Info file '${LOCAL_INFO_FILE}' already exists" "warning"
+    fi
+    
+    msg "Creating archive file '${LOCAL_ARCHIVE_FILE}'..."
+    
+    local args="cvf"
+    if [[ $VERBOSE = true ]]; then
+        args="cvzf"
+    fi
+
+    if [[ ! -f ${LOCAL_ARCHIVE_FILE} ]]; then
+        if ! tar $args "${LOCAL_ARCHIVE_FILE}" * >> "$LOGFILE" 2>&1; then
+            abord "Error while creating archive file '${LOCAL_ARCHIVE_FILE}'"
+        fi
+
+        if ! gzip -t "${LOCAL_ARCHIVE_FILE}"; then
+            abord "Error while creating archive file ${LOCAL_ARCHIVE_FILE}. The compressed file is corrupted !"
+        fi
+        msg "Archive file '${LOCAL_ARCHIVE_FILE}' created !" "success"
+    else
+        msg "Archive file '${LOCAL_ARCHIVE_FILE}' already exists" "warning"
+    fi
+    
+    archiveSize=$(du -sb "${LOCAL_ARCHIVE_FILE}" | awk "{ print \$1 }")
+
+    msg "Archive file size = ${archiveSize} bytes"
+}
+
+
+# Get available disk space in bytes for a submitted directory
+# @param $1 string path to test
+function getAvalaibleDiskSpace() {
+    local _path="$1"
+
+    if [[ ! -e $_path ]]; then
+        abord "getAvalaibleDiskSpace path '$_path' provided doesn't exists !"
+    fi
+
+    local _mountPoint=$(findmnt -T "$_path" -o SOURCE -n)
+    df -B1 --output="source,avail" "$_mountPoint" | awk "{ if (\$1 == \"$_mountPoint\") { print \$2 } }"
+}
+
+function mountExternalDisk() {
+    msg "Mounting USB disk '${DEST_DISK}'..."
+
+    if mount | grep -q "${mountedDest}"; then
+        local _mountedDisk=$(mount | grep "${mountedDest}" | awk "{ print \$1 }")
+
+        if [[ $_mountedDisk != $DEST_DISK ]]; then
+            abord "Directory '${mountedDest}' is already mounted from disk '${_mountedDisk}'. Abording."
+        fi
+
+        msg "Disk '${DEST_DISK}' already mounted. Continue." "warning"
+        
+        return
+    fi
+    
+    if mount | grep -q "${DEST_DISK}"; then
+        mountedDest=$(mount | grep "${DEST_DISK}" | awk "{ print \$3 }")
+
+        msg "Disk '${DEST_DISK}' already mounted on '${mountedDest}'. Continue." "warning"
+
+        return
+    fi
+
+    mkdir -p "${mountedDest}"
+
+    if ! mount "${DEST_DISK}" "${mountedDest}" -t auto >> "$LOGFILE" 2>&1; then
+        abord "Unable to mount '${DEST_DISK}' on '${mountedDest}'. Abording."
+    fi
+
+    msg "Disk '${DEST_DISK}' mounted on '${mountedDest}'" "success"
+}
+
+function copyFilesToUsbDisk() {
+    local _destRepo="${mountedDest}/${DEST_REPO}"
+    local _destInfoFile="${_destRepo}/${INFO_FILE}"
+    local _destArchiveFile="${_destRepo}/${ARCHIVE_FILE}"
+
+    msg "Copy files to '${_destRepo}'..."
+
+    mkdir -p "${_destRepo}"
+
+    # Check if there is enough space on USB disk to create archive file
+    local _usbAvailableSpace=$(getAvalaibleDiskSpace "${mountedDest}")
+    if [[ $_usbAvailableSpace -lt $BACKUP_SIZE ]]; then
+        msg "There is not enough space on USB to transfert archive file (space left = ${_usbAvailableSpace} bytes). Trying to free space on USB..." "warning"
+
+        local _numberOfDays3MonthAgo=$(( ( $(date '+%s') - $(date -d '3 months ago' '+%s') ) / 86400 ))
+        local _verboseArg=''
+        if [[ $VERBOSE = true ]]; then
+            _verboseArg='-print'
+        fi
+        find "$_destRepo" -mtime +$_numberOfDays3MonthAgo -type f -delete $_verboseArg >> "$LOGFILE"
+        _usbAvailableSpace=$(getAvalaibleDiskSpace "${mountedDest}")
+        msg "Space after making room = ${_usbAvailableSpace} bytes" "verbose"
+
+        if [[ $_usbAvailableSpace -lt $BACKUP_SIZE ]]; then
+            abord "Can't make enough room on USB disk. Abording."
+        fi
+    fi
+
+    if ! cp -a "${LOCAL_INFO_FILE}" "${_destInfoFile}" || ! cp -a "${LOCAL_ARCHIVE_FILE}" "${_destArchiveFile}"; then
+        abord "Can't copy files on USB disk. Abording."
+    fi
+
+    msg "Files copied to '${_destRepo}'" "success"
+}
+
+function checkFiles() {
+    local _destRepo="${mountedDest}/${DEST_REPO}"
+
+    msg "Checking files..."
+    cd "${LOCAL_REPO}"
+    md5sum "${INFO_FILE}" > "/tmp/${BACKUP_NAME}.md5"
+    md5sum "${ARCHIVE_FILE}" >> "/tmp/${BACKUP_NAME}.md5"
+    cd "${_destRepo}"
+    if ! md5sum -c "/tmp/${BACKUP_NAME}.md5"; then
+        rm -f "/tmp/${BACKUP_NAME}.md5"
+        abord "Local archive and USB archive are different. Something wen't wrong when copying files. Abording."
+    fi
+
+    rm -f "/tmp/${BACKUP_NAME}.md5"
+
+    msg "Local archive and USB archive are the same" "success"
+}
+
+function cleanup() {
+    # Try to unmount until device is not busy
+    local _busy=true
+    local _cpt=0
+    cd "${LOCAL_REPO}"
+    msg "Unmount '${mountedDest}'..."
+    while $_busy; do
+        if mountpoint -q "${mountedDest}"; then
+            if umount "${mountedDest}" 2> /dev/null; then
+                _busy=false
+            else
+                msg "Wait 5 sec. to umount '${mountedDest}'..."
+                sleep 5
+            fi
+        else
+            _busy=false
+        fi
+        _cpt=$(( _cpt + 1 ))
+        if [[ $_cpt -gt 15 ]]; then
+            break
+        fi
+    done
+
+    if [[ $_busy = true ]]; then
+        msg "Can't umount '${mountedDest}', you need to umount it manually" "warning"
+    else
+        msg "'${mountedDest}' umounted" "success"
+    fi
+}
+
+# main function for backup to rclone
+function main() {
+    msg "----- Begin backup yunohost to external USB disk -----"
+    createLocalArchive
+    mountExternalDisk
+    copyFilesToUsbDisk
+    checkFiles
+    cleanup
+
+    message="Backup '${BACKUP_NAME}' size = ${archiveSize} bytes created and copied on USB '${mountedDest}' !"
+    msg "$message" "success"
+
+    if [[ -n $MAIL && $VERBOSE = true ]]; then
+        now="$(date "+%Y-%m-%d %H:%M:%S")"
+        echo "$now $message" | mail -s "Yunohost backup usb - OK" $MAIL
+    fi
+}
+
+case "$1" in
+    need_mount)
+        # Set false if your method can itself put files in good place in your archive
+        true
+        ;;
+    backup)
+        main
+        ;;
+    *)
+        echo "hook called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

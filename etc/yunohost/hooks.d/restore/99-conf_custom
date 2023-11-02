@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# Source YNH helpers
+source /usr/share/yunohost/helpers
+
+ynh_restore_dest (){
+    YNH_CWD="${YNH_BACKUP_DIR%/}/$1"
+    cd "$YNH_CWD"
+}
+
+# Exit hook on subcommand error or unset variable
+ynh_abort_if_errors
+
+# bin
+ynh_restore_dest "conf/custom/local-bin"
+ynh_restore_file "/usr/local/bin/"
+
+# udev rules
+ynh_restore_dest "conf/custom/udev-rules.d"
+ynh_restore_file "/etc/udev/rules.d/20-disk-bays.rules"
+ynh_restore_file "/etc/udev/rules.d/21-usb-disk.rules"
+
+# update-motd.d
+ynh_package_install smartmontools
+ynh_restore_dest "conf/custom/update-motd.d"
+ynh_restore_file "/etc/update-motd.d/00-banner"
+ynh_restore_file "/etc/update-motd.d/15-sysinfo"
+ynh_restore_file "/etc/update-motd.d/20-smart"
+ynh_restore_file "/etc/update-motd.d/21-raid"
+ynh_restore_file "/etc/update-motd.d/22-lvm"
+ynh_restore_file "/etc/update-motd.d/colors.sh"
+
+# shell and profile.d
+ynh_package_install zsh
+ynh_package_install liquidprompt
+ynh_restore_dest "conf/custom/profile.d"
+ynh_restore_file "/etc/profile.d/aliases.sh"
+ynh_restore_file "/etc/profile.d/dircolors.sh"
+ynh_restore_file "/etc/profile.d/liquidprompt.sh"
+
+ynh_package_install git
+ynh_package_install curl
+ynh_package_install command-not-found
+ynh_restore_dest "conf/custom/antigen"
+ynh_restore_file "/etc/zsh/zshrc"
+ynh_restore_file "/opt/antigen/"
+ynh_restore_file "/etc/nslcd.conf"
+
+# backups hooks and methods
+ynh_package_install rclone
+ynh_backup_dest "conf/custom/rclone"
+ynh_backup "/root/.config/rclone/"
+
+ynh_restore_dest "conf/custom/cron.d"
+ynh_restore_file "/etc/cron.d/yunohost-backup-rclone"
+
+ynh_restore_dest "conf/custom/logrotate.d"
+ynh_restore_file "/etc/logrotate.d/yunohost-backup-rclone"
+ynh_restore_file "/etc/logrotate.d/yunohost-backup-usb"
+
+ynh_restore_dest "conf/custom/yunohost-backup-method"
+ynh_restore_file "/etc/yunohost/hooks.d/backup_method"
+
+ynh_restore_dest "conf/custom/yunohost-backup-conf"
+ynh_restore_file "/etc/yunohost/hooks.d/backup/99-conf_custom"
+
+ynh_restore_dest "conf/custom/yunohost-restore-conf"
+ynh_restore_file "/etc/yunohost/hooks.d/restore/99-conf_custom"
+
+
+# Samba
+app="custom_samba" # This variable is important for the following helper
+ynh_install_app_dependencies "samba"
+
+ynh_restore_dest "conf/custom/samba"
+ynh_restore_file "/etc/samba"
+ynh_restore_file "/var/lib/samba"
+ynh_restore_file "/etc/yunohost/hooks.d/post_user_create/99-samba"
+ynh_restore_file "/etc/yunohost/hooks.d/post_user_delete/99-samba"
+ynh_restore_file --src_path="/etc/yunohost/hooks.d/post_user_update/99-samba" --not_mandatory
