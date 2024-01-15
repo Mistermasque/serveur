@@ -6,24 +6,23 @@
 # Disque USB à monter
 declare -r USB_DISK='/dev/hdd_usb_front_haut_1'
 # Sous répertoire contenant les sauvegardes
-declare -r USB_REPO="yunohost_backup"
+declare -r USB_REPO="yunohost_archives"
 
 ######## VARIABLES GLOBALES ########
 # Mounted dest dir (without ending /) can be modified if USB_DISK is already mounted
 USB_DEST_DIR="/mnt/usb_backup"
 
-
 source "$ROOT_DIR/functions.sh"
 
 ############ FONCTIONS ###########
 
-# Get available disk space in bytes for a submitted directory
-# @param $1 string path to test
+# Récupère la place disponible sur le répertoire local
+# @param $1 string le répertoire à tester
 function getAvalaibleDiskSpace() {
     local _path="$1"
 
     if [[ ! -e $_path ]]; then
-        abord "getAvalaibleDiskSpace path '$_path' provided doesn't exists !"
+        abord "getAvalaibleDiskSpace : répertoire '$_path' n'existe pas !"
     fi
 
     local _mountPoint=$(findmnt -T "$_path" -o SOURCE -n)
@@ -85,19 +84,19 @@ function backupFileToDest() {
 
     # Check if there is enough space on USB disk to create archive file
     local _usbAvailableSpace=$(getAvalaibleDiskSpace "${USB_DEST_DIR}")
-    if [[ $_usbAvailableSpace -lt $BACKUP_SIZE ]]; then
-        msg "Place insuffisante sur le disque USB (space left = ${_usbAvailableSpace} bytes). On tente de faire de la place..." "warning"
+    if [[ $_usbAvailableSpace -lt $_srcFileSize ]]; then
+        msg "Place insuffisante sur le disque USB (space left = $(hrb ${_usbAvailableSpace}). On tente de faire de la place..." "warning"
 
         local _numberOfDays3MonthAgo=$(( ( $(date '+%s') - $(date -d '3 months ago' '+%s') ) / 86400 ))
         local _verboseArg=''
         if [[ $VERBOSE = true ]]; then
             _verboseArg='-print'
         fi
-        find "$_destRepo" -mtime +$_numberOfDays3MonthAgo -type f -delete $_verboseArg
+        find "$_destRepo" -mtime +$_numberOfDays3MonthAgo -type f -delete $_verboseArg >> "$LOGFILE"
         _usbAvailableSpace=$(getAvalaibleDiskSpace "${USB_DEST_DIR}")
         msg "Espace après suppression anciens fichiers = ${_usbAvailableSpace} octets" "verbose"
 
-        if [[ $_usbAvailableSpace -lt $BACKUP_SIZE ]]; then
+        if [[ $_usbAvailableSpace -lt $_srcFileSize ]]; then
             msg "Impossible de faire suffisamment de place sur le disque" 'warning'
             return 1
         fi
@@ -126,13 +125,13 @@ function cleanup() {
     local _busy=true
     local _cpt=0
     cd "${ROOT_DIR}"
-    msg "Unmount '${USB_DEST_DIR}'..."
+    msg "Démontage '${USB_DEST_DIR}'..."
     while $_busy; do
         if mountpoint -q "${USB_DEST_DIR}"; then
             if umount "${USB_DEST_DIR}" 2> /dev/null; then
                 _busy=false
             else
-                msg "Wait 5 sec. to umount '${USB_DEST_DIR}'..."
+                msg "On attend 5 sec pour démonter '${USB_DEST_DIR}'..."
                 sleep 5
             fi
         else

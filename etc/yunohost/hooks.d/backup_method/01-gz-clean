@@ -1,0 +1,196 @@
+#!/bin/bash
+set -euo pipefail
+
+# Get yunohost helpers
+source /usr/share/yunohost/helpers
+
+
+# set verbosity (true|false)
+declare -r VERBOSE=true
+# log file
+declare -r LOGFILE="/var/log/yunohost/backup-gz-clean.log"
+# Send mail to admins group
+declare -r MAIL="admins"
+
+# Params sent by yunohost backup script
+declare -r BACKUP_TMP_REP="$2"
+declare -r BACKUP_NAME="$3"
+declare -r LOCAL_REPO="$4"
+declare -r BACKUP_SIZE="$5"
+declare -r BACKUP_DESCRIPTION="$6"
+
+declare -r INFO_FILE="${BACKUP_NAME}.info.json"
+declare -r ARCHIVE_FILE="${BACKUP_NAME}.tar.gz"
+declare -r LOCAL_INFO_FILE="${LOCAL_REPO}/${INFO_FILE}"
+declare -r LOCAL_ARCHIVE_FILE="${LOCAL_REPO}/${ARCHIVE_FILE}"
+
+# Archive file size after creation
+ARCHIVE_SIZE=0
+
+
+# Message function
+# $1 : message to print
+# $2 : message type success|error|warning|verbose|info|<null>
+msg() {
+    local msg="$1"
+    local type="${2-info}"
+    local prefix=''
+    local now=''
+
+    case "${type}" in
+        'success')
+            prefix="[OK] "
+            ynh_print_info --message="[OK] $msg"
+            ;;
+        'error')
+            prefix="[ERROR] "
+            ynh_print_err --message="$msg"
+        ;;
+        'warning')
+            prefix="[WARN] "
+            ynh_print_warn --message="$msg"
+        ;;
+        'verbose')
+            if [[ $VERBOSE = false ]]; then
+                return
+            fi
+        ;;
+        'info')
+            ynh_print_info --message="$msg"
+        ;;
+        *)
+            ynh_print_err --message="[ERROR] msg type '${type}' inconnu"
+            exit 1
+        ;;
+    esac
+
+    now="$(date "+%Y-%m-%d %H:%M:%S") "
+    printf '%s%s%s\n' "$now" "$prefix" "$msg" >> "$LOGFILE"
+}
+
+# Function to tell to abord script
+# Allows to send a message to mail before exit
+# $1 : abording message
+abord() {
+    local msg="$1"
+
+    if [[ -n $MAIL ]]; then
+        echo "$msg" | mail -s "Yunohost backup - ERROR" $MAIL
+    fi
+
+    msg "$msg" "error"
+
+    exit 1
+}
+
+# Fonction utilisée pour convertir une taille en octets vers une valeur en KiO, MiO, GiO...
+# $1 : la valeur en octets
+# Résultat est affiché en echo
+hrb() {
+    local $bytes="$1"
+    numfmt --to=iec-i --suffix=O --format="%9.2f" $bytes
+}
+
+# Fonction permettant de vérifier si il y a assez d'espace pour créer l'archive
+# et tentative de suppression des anciennes
+function checkSpaceAndPruneOldArchives() {
+    local _availableSpaceOnDisk=$(getAvalaibleDiskSpace "${LOCAL_REPO}")
+
+    if [[ $_availableSpaceOnDisk -lt $BACKUP_SIZE ]]; then
+        msg "Il n'y a pas assez d'espace sur le disque pour créer l'archive (espace restant = $( hrb ${_availableSpaceOnDisk} )). Tentative de suppressin des anciennes archives..." "warning"
+
+        local _numberOfDays3MonthAgo=$(( ( $(date '+%s') - $(date -d '3 months ago' '+%s') ) / 86400 ))
+        local _verboseArg=''
+        if [[ $VERBOSE = true ]]; then
+            _verboseArg='-print'
+        fi
+        find "$LOCAL_REPO" -mtime +$_numberOfDays3MonthAgo -type f -delete $_verboseArg >> "$LOGFILE"
+        _availableSpaceOnDisk=$(getAvalaibleDiskSpace "${LOCAL_REPO}")
+        msg "Espace après supression des archives = $( hrb ${_availableSpaceOnDisk} )" "verbose"
+
+        if [[ $_availableSpaceOnDisk -lt $BACKUP_SIZE ]]; then
+            abord "Impossible de faire suffisamment de place pour créer l'archive. Abandon."
+        fi
+    fi
+}
+
+# Create archive file as yunohost expect
+# Set global ARCHIVE_SIZE var
+function createLocalArchive() {
+
+    cd "$BACKUP_TMP_REP"
+    msg "Création du fichier d'info '${LOCAL_INFO_FILE}'..."
+    if [[ ! -f ${LOCAL_INFO_FILE} ]]; then
+        cp info.json "${LOCAL_INFO_FILE}"
+        msg "Fichier d'info '${LOCAL_INFO_FILE}' créé" "success"
+    else
+        msg "Fichier d'info '${LOCAL_INFO_FILE}' déjà existant" "warning"
+    fi
+    
+    msg "Création du fichier d'archive '${LOCAL_ARCHIVE_FILE}'..."
+    
+    local args="czf"
+    if [[ $VERBOSE = true ]]; then
+        args="cvzf"
+    fi
+
+    if [[ ! -f ${LOCAL_ARCHIVE_FILE} ]]; then
+        if ! tar $args "${LOCAL_ARCHIVE_FILE}" * >> "$LOGFILE" 2>&1; then
+            abord "Erreur à la création du fichier d'archive '${LOCAL_ARCHIVE_FILE}'"
+        fi
+
+        if ! gzip -t "${LOCAL_ARCHIVE_FILE}"; then
+            abord "Erreur à la création du fichier d'archive '${LOCAL_ARCHIVE_FILE}'. Le fichier compressé est corrompu !"
+        fi
+        msg "Fichier d'archive '${LOCAL_ARCHIVE_FILE}' créé !" "success"
+    else
+        msg "Fichier d'archive '${LOCAL_ARCHIVE_FILE}' existe déjà" "warning"
+    fi
+    
+    ARCHIVE_SIZE=$(du -sb "${LOCAL_ARCHIVE_FILE}" | awk "{ print \$1 }")
+
+    msg "Fichier d'archive taille = $( hrb ${ARCHIVE_SIZE} )" "verbose"
+}
+
+
+# Get available disk space in bytes for a submitted directory
+# @param $1 string path to test
+function getAvalaibleDiskSpace() {
+    local _path="$1"
+
+    if [[ ! -e $_path ]]; then
+        abord "getAvalaibleDiskSpace path '$_path' provided doesn't exists !"
+    fi
+
+    local _mountPoint=$(findmnt -T "$_path" -o SOURCE -n)
+    df -B1 --output="source,avail" "$_mountPoint" | awk "{ if (\$1 == \"$_mountPoint\") { print \$2 } }"
+}
+
+# main function for backup to rclone
+function main() {
+    msg "----- Démarrage backup yunohost en archive compressée gz -----"
+    checkSpaceAndPruneOldArchives
+    createLocalArchive
+
+    if [[ -n $MAIL && $VERBOSE = true ]]; then
+        now="$(date "+%Y-%m-%d %H:%M:%S")"
+        message="Fichier d'archive '${LOCAL_ARCHIVE_FILE}' taille = $( hrb ${ARCHIVE_SIZE} ) créé."
+        echo "$now $message" | mail -s "Yunohost backup backup - OK" $MAIL
+    fi
+}
+
+case "$1" in
+    need_mount)
+        # Set false if your method can itself put files in good place in your archive
+        true
+        ;;
+    backup)
+        main
+        ;;
+    *)
+        echo "hook called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

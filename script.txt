@@ -1,0 +1,208 @@
++ set -eo pipefail
++ declare -r SRC_DIR=/home/yunohost.backup/archives
++ declare -r 'SRC_FILES_PATERN=^[0-9]{8}-[0-9]{6}\.(tar|info\.json|tar\.gz)$'
++++ dirname ./opt/backup-to-remote/backup-to-remote.sh
+++ cd ./opt/backup-to-remote
+++ pwd
++ declare -r ROOT_DIR=/mnt/serveur/opt/backup-to-remote
+++ sed s/_method.sh//g
+++ grep '_method.sh*'
+++ ls /mnt/serveur/opt/backup-to-remote
++ declare -ra 'METHODS=rclone
+usb'
++ source /mnt/serveur/opt/backup-to-remote/functions.sh
+++ declare -r MAIL=admins
+++ declare -r LOGFILE=/var/log/backup-to-remote.log
+++ declare VERBOSE=false
+++ declare QUIET=false
+++ declare MESSAGES=
+++ declare METHOD=
++ getopts hqv arg
++ loadMethod rclone
++ [[ -z rclone ]]
++ local method=rclone
++ msg 'Chargement méthode '\''rclone'\''...' verbose
++ local 'message=Chargement méthode '\''rclone'\''...'
++ local type=verbose
++ local prefix=
++ case "${type}" in
++ [[ false = false ]]
++ return
++ [[ rclone
+usb =~ rclone ]]
++ source /mnt/serveur/opt/backup-to-remote/rclone_method.sh
+++ RCLONE_REMOTE=pcloud-crypt:
+++ RCLONE_DEST=pcloud-crypt:/yunohost_backups
+++ RCLONE_REMOTE_CRYPTED=true
+++ type -t backupFileToDest
++ [[ function != function ]]
+++ type -t prepare
++ [[ function != function ]]
+++ type -t cleanup
++ [[ function != function ]]
++ METHOD=rclone
++ msg 'Démarrage backup to rclone...'
++ local 'message=Démarrage backup to rclone...'
++ local type=info
++ local prefix=
++ case "${type}" in
+++ date '+%Y-%m-%d %H:%M:%S'
++ local 'now=2024-01-15 13:33:06 '
+++ printf '%s%s%s\n' '2024-01-15 13:33:06 ' '' 'Démarrage backup to rclone...'
++ local 'logMsg=2024-01-15 13:33:06 Démarrage backup to rclone...'
++ MESSAGES='\n2024-01-15 13:33:06 Démarrage backup to rclone...'
++ echo '2024-01-15 13:33:06 Démarrage backup to rclone...'
++ [[ false = false ]]
++ [[ info = \e\r\r\o\r ]]
++ printf '%s%s\n' '' 'Démarrage backup to rclone...'
+Démarrage backup to rclone...
++ prepare
++ checkDependencies
++ command -v rclone
++ return 0
++ read file
++ egrep '^[0-9]{8}-[0-9]{6}\.(tar|info\.json|tar\.gz)$'
++ ls -t /home/yunohost.backup/archives
++ path=/home/yunohost.backup/archives/20240115-094215.info.json
+++ awk '{ print $1 }'
+++ du -sb /home/yunohost.backup/archives/20240115-094215.info.json
++ filesize=934
++ msg 'Sauvegarde fichier '\''20240115-094215.info.json'\''....'
++ local 'message=Sauvegarde fichier '\''20240115-094215.info.json'\''....'
++ local type=info
++ local prefix=
++ case "${type}" in
+++ date '+%Y-%m-%d %H:%M:%S'
++ local 'now=2024-01-15 13:33:06 '
+++ printf '%s%s%s\n' '2024-01-15 13:33:06 ' '' 'Sauvegarde fichier '\''20240115-094215.info.json'\''....'
++ local 'logMsg=2024-01-15 13:33:06 Sauvegarde fichier '\''20240115-094215.info.json'\''....'
++ MESSAGES='\n2024-01-15 13:33:06 Démarrage backup to rclone...\n2024-01-15 13:33:06 Sauvegarde fichier '\''20240115-094215.info.json'\''....'
++ echo '2024-01-15 13:33:06 Sauvegarde fichier '\''20240115-094215.info.json'\''....'
++ [[ false = false ]]
++ [[ info = \e\r\r\o\r ]]
++ printf '%s%s\n' '' 'Sauvegarde fichier '\''20240115-094215.info.json'\''....'
+Sauvegarde fichier '20240115-094215.info.json'....
++ backupFileToDest /home/yunohost.backup/archives/20240115-094215.info.json 934
++ local srcFile=/home/yunohost.backup/archives/20240115-094215.info.json
++ local srcFileSize=934
+++ basename /home/yunohost.backup/archives/20240115-094215.info.json
++ local filename=20240115-094215.info.json
++ local destFile=pcloud-crypt:/yunohost_backups/20240115-094215.info.json
+++ getAvalaibleDiskSpaceOnRemote pcloud-crypt:
+++ local remote=pcloud-crypt:
+++ sed 's/.*"free": *\([^,}]*\).*/\1/'
+++ grep free
+++ rclone about --json pcloud-crypt:
++ local remoteAvailableSpace=845897808310
++ [[ 845897808310 -lt 934 ]]
++ rclone copy /home/yunohost.backup/archives/20240115-094215.info.json pcloud-crypt:/yunohost_backups
++ checkFile /home/yunohost.backup/archives/20240115-094215.info.json pcloud-crypt:/yunohost_backups/
++ local srcFile=/home/yunohost.backup/archives/20240115-094215.info.json
++ local destFile=pcloud-crypt:/yunohost_backups/
++ local cmd=check
++ isRemoteCrypted pcloud-crypt:
++ local remote=pcloud-crypt:
++ grep -q crypt
++ grep pcloud-crypt:
++ rclone listremotes --long
++ return 0
++ cmd=cryptcheck
++ rclone cryptcheck /home/yunohost.backup/archives/20240115-094215.info.json pcloud-crypt:/yunohost_backups/
++ return 0
++ return 0
+++ hrb 934
+++ local bytes=934
+++ sed 's/ //g'
+++ numfmt --to=iec-i --suffix=O --format=%9.2f 934
++ msg 'Fichier '\''20240115-094215.info.json'\'' size=934,00O transféré !' success
++ local 'message=Fichier '\''20240115-094215.info.json'\'' size=934,00O transféré !'
++ local type=success
++ local prefix=
++ case "${type}" in
++ prefix='[OK] '
+++ date '+%Y-%m-%d %H:%M:%S'
++ local 'now=2024-01-15 13:33:08 '
+++ printf '%s%s%s\n' '2024-01-15 13:33:08 ' '[OK] ' 'Fichier '\''20240115-094215.info.json'\'' size=934,00O transféré !'
++ local 'logMsg=2024-01-15 13:33:08 [OK] Fichier '\''20240115-094215.info.json'\'' size=934,00O transféré !'
++ MESSAGES='\n2024-01-15 13:33:06 Démarrage backup to rclone...\n2024-01-15 13:33:06 Sauvegarde fichier '\''20240115-094215.info.json'\''....\n2024-01-15 13:33:08 [OK] Fichier '\''20240115-094215.info.json'\'' size=934,00O transféré !'
++ echo '2024-01-15 13:33:08 [OK] Fichier '\''20240115-094215.info.json'\'' size=934,00O transféré !'
++ [[ false = false ]]
++ [[ success = \e\r\r\o\r ]]
++ printf '%s%s\n' '[OK] ' 'Fichier '\''20240115-094215.info.json'\'' size=934,00O transféré !'
+[OK] Fichier '20240115-094215.info.json' size=934,00O transféré !
++ read file
++ path=/home/yunohost.backup/archives/20240115-094215.tar
+++ awk '{ print $1 }'
+++ du -sb /home/yunohost.backup/archives/20240115-094215.tar
++ filesize=378880
++ msg 'Sauvegarde fichier '\''20240115-094215.tar'\''....'
++ local 'message=Sauvegarde fichier '\''20240115-094215.tar'\''....'
++ local type=info
++ local prefix=
++ case "${type}" in
+++ date '+%Y-%m-%d %H:%M:%S'
++ local 'now=2024-01-15 13:33:08 '
+++ printf '%s%s%s\n' '2024-01-15 13:33:08 ' '' 'Sauvegarde fichier '\''20240115-094215.tar'\''....'
++ local 'logMsg=2024-01-15 13:33:08 Sauvegarde fichier '\''20240115-094215.tar'\''....'
++ MESSAGES='\n2024-01-15 13:33:06 Démarrage backup to rclone...\n2024-01-15 13:33:06 Sauvegarde fichier '\''20240115-094215.info.json'\''....\n2024-01-15 13:33:08 [OK] Fichier '\''20240115-094215.info.json'\'' size=934,00O transféré !\n2024-01-15 13:33:08 Sauvegarde fichier '\''20240115-094215.tar'\''....'
++ echo '2024-01-15 13:33:08 Sauvegarde fichier '\''20240115-094215.tar'\''....'
++ [[ false = false ]]
++ [[ info = \e\r\r\o\r ]]
++ printf '%s%s\n' '' 'Sauvegarde fichier '\''20240115-094215.tar'\''....'
+Sauvegarde fichier '20240115-094215.tar'....
++ backupFileToDest /home/yunohost.backup/archives/20240115-094215.tar 378880
++ local srcFile=/home/yunohost.backup/archives/20240115-094215.tar
++ local srcFileSize=378880
+++ basename /home/yunohost.backup/archives/20240115-094215.tar
++ local filename=20240115-094215.tar
++ local destFile=pcloud-crypt:/yunohost_backups/20240115-094215.tar
+++ getAvalaibleDiskSpaceOnRemote pcloud-crypt:
+++ local remote=pcloud-crypt:
+++ sed 's/.*"free": *\([^,}]*\).*/\1/'
+++ grep free
+++ rclone about --json pcloud-crypt:
++ local remoteAvailableSpace=845897808310
++ [[ 845897808310 -lt 378880 ]]
++ rclone copy /home/yunohost.backup/archives/20240115-094215.tar pcloud-crypt:/yunohost_backups
++ checkFile /home/yunohost.backup/archives/20240115-094215.tar pcloud-crypt:/yunohost_backups/
++ local srcFile=/home/yunohost.backup/archives/20240115-094215.tar
++ local destFile=pcloud-crypt:/yunohost_backups/
++ local cmd=check
++ isRemoteCrypted pcloud-crypt:
++ local remote=pcloud-crypt:
++ grep -q crypt
++ grep pcloud-crypt:
++ rclone listremotes --long
++ return 0
++ cmd=cryptcheck
++ rclone cryptcheck /home/yunohost.backup/archives/20240115-094215.tar pcloud-crypt:/yunohost_backups/
++ return 0
++ return 0
+++ hrb 378880
+++ local bytes=378880
+++ sed 's/ //g'
+++ numfmt --to=iec-i --suffix=O --format=%9.2f 378880
++ msg 'Fichier '\''20240115-094215.tar'\'' size=370,00KiO transféré !' success
++ local 'message=Fichier '\''20240115-094215.tar'\'' size=370,00KiO transféré !'
++ local type=success
++ local prefix=
++ case "${type}" in
++ prefix='[OK] '
+++ date '+%Y-%m-%d %H:%M:%S'
++ local 'now=2024-01-15 13:33:11 '
+++ printf '%s%s%s\n' '2024-01-15 13:33:11 ' '[OK] ' 'Fichier '\''20240115-094215.tar'\'' size=370,00KiO transféré !'
++ local 'logMsg=2024-01-15 13:33:11 [OK] Fichier '\''20240115-094215.tar'\'' size=370,00KiO transféré !'
++ MESSAGES='\n2024-01-15 13:33:06 Démarrage backup to rclone...\n2024-01-15 13:33:06 Sauvegarde fichier '\''20240115-094215.info.json'\''....\n2024-01-15 13:33:08 [OK] Fichier '\''20240115-094215.info.json'\'' size=934,00O transféré !\n2024-01-15 13:33:08 Sauvegarde fichier '\''20240115-094215.tar'\''....\n2024-01-15 13:33:11 [OK] Fichier '\''20240115-094215.tar'\'' size=370,00KiO transféré !'
++ echo '2024-01-15 13:33:11 [OK] Fichier '\''20240115-094215.tar'\'' size=370,00KiO transféré !'
++ [[ false = false ]]
++ [[ success = \e\r\r\o\r ]]
++ printf '%s%s\n' '[OK] ' 'Fichier '\''20240115-094215.tar'\'' size=370,00KiO transféré !'
+[OK] Fichier '20240115-094215.tar' size=370,00KiO transféré !
++ read file
++ cleanup
++ return 0
++ sendMail 'Sauvegarde rclone - OK'
++ local 'subject=Sauvegarde rclone - OK'
++ [[ -n admins ]]
++ mail -s 'Sauvegarde rclone - OK' admins
++ echo '\n2024-01-15' 13:33:06 Démarrage backup to rclone...

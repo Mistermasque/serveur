@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Source YNH helpers
+source /usr/share/yunohost/helpers
+
+ynh_backup_dest (){
+    YNH_CWD="${YNH_BACKUP_DIR%/}/$1"
+    mkdir -p $YNH_CWD
+    cd "$YNH_CWD"
+}
+
+# Exit hook on subcommand error or unset variable
+ynh_abort_if_errors
+
+# /opt
+ynh_backup_dest "conf/backup-to-remote/opt"
+ynh_backup "/opt/backup-to-remote/"
+
+# restore hook
+ynh_backup_dest "conf/backup-to-remote"
+ynh_backup --src_path="/etc/yunohost/hooks.d/restore/98-backup-to-remote" --not_mandatory
+

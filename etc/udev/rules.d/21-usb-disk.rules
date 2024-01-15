@@ -15,7 +15,7 @@ GOTO="END_21_USB_DISK"
 KERNEL=="sd?*", SUBSYSTEM=="block", \
 DEVPATH=="*/usb1/1-1/1-1.2/1-1.2:1.0*", \
 SYMLINK+="hdd_usb_front_haut_%n", \
-RUN+="/usr/bin/systemctl --no-block start yunohost-backup-usb-@%k.service"
+RUN+="/usr/bin/systemctl --no-block start backup-to-usb-@%k.service"
 
 # Identification du disque connecté au port USB frontal du bas identifié à l'origine par /dev/sde
 # résultat de la commande udevadm info --query=path --name=/dev/sde

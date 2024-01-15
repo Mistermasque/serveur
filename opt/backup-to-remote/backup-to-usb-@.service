@@ -4,4 +4,4 @@ BindsTo=dev-%i.device
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/yunohost backup create --method='usb'
+ExecStart=/opt/backup-to-remote/backup-to-remote.sh -l usb

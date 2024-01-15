@@ -1,2 +1,2 @@
 # Lancement de la sauvegarde tous les 5 et 15 du mois à 3 heures du matin
-0 3 5,15 * * root yunohost backup create --method=rclone --quiet
+0 3 5,15 * * root yunohost backup create --method=gz-clean --quiet
