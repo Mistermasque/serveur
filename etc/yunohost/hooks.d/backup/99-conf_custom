@@ -44,13 +44,6 @@ ynh_backup "/etc/zsh/zshrc"
 ynh_backup_dest "conf/custom/rclone"
 ynh_backup "/root/.config/rclone/"
 
-ynh_backup_dest "conf/custom/cron.d"
-ynh_backup "/etc/cron.d/yunohost-backup-rclone"
-
-ynh_backup_dest "conf/custom/logrotate.d"
-ynh_backup "/etc/logrotate.d/yunohost-backup-rclone"
-ynh_backup "/etc/logrotate.d/yunohost-backup-usb"
-
 ynh_backup_dest "conf/custom/yunohost-backup-method"
 ynh_backup "/etc/yunohost/hooks.d/backup_method"
 
@@ -59,9 +52,6 @@ ynh_backup "/etc/yunohost/hooks.d/backup/99-conf_custom"
 
 ynh_backup_dest "conf/custom/yunohost-restore-conf"
 ynh_backup "/etc/yunohost/hooks.d/restore/99-conf_custom"
-
-ynh_backup_dest "conf/custom/systemd-system"
-ynh_backup "/etc/systemd/system/yunohost-backup-usb-@.service"
 
 # Samba
 ynh_backup_dest "conf/custom/samba"

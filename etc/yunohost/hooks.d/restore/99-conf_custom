@@ -50,13 +50,6 @@ ynh_package_install rclone
 ynh_backup_dest "conf/custom/rclone"
 ynh_backup "/root/.config/rclone/"
 
-ynh_restore_dest "conf/custom/cron.d"
-ynh_restore_file "/etc/cron.d/yunohost-backup-rclone"
-
-ynh_restore_dest "conf/custom/logrotate.d"
-ynh_restore_file "/etc/logrotate.d/yunohost-backup-rclone"
-ynh_restore_file "/etc/logrotate.d/yunohost-backup-usb"
-
 ynh_restore_dest "conf/custom/yunohost-backup-method"
 ynh_restore_file "/etc/yunohost/hooks.d/backup_method"
 
@@ -65,9 +58,6 @@ ynh_restore_file "/etc/yunohost/hooks.d/backup/99-conf_custom"
 
 ynh_restore_dest "conf/custom/yunohost-restore-conf"
 ynh_restore_file "/etc/yunohost/hooks.d/restore/99-conf_custom"
-
-ynh_restore_dest "conf/custom/systemd-system"
-ynh_restore_file "/etc/systemd/system/yunohost-backup-usb-@.service"
 
 # Samba
 app="custom_samba" # This variable is important for the following helper
