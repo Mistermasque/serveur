@@ -40,7 +40,7 @@ do
    destDir=$( dirname "$destFile" )
 
    mkdir -p "${destDir}"
-   ln -sfn "$srcFile" "$destFile"
+   ln -sfn "${REP_INSTALL}/$srcFile" "$destFile"
 done
 
 for conf in ${COPY_FILES[@]}
@@ -50,7 +50,7 @@ do
    destDir=$( dirname "$destFile" )
 
    mkdir -p "${destDir}"
-   cp "$srcFile" "$destFile"
+   cp "${REP_INSTALL}/$srcFile" "$destFile"
 done
 
 chmod +x ./backup-to-remote.sh
