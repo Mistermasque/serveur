@@ -1,18 +1,14 @@
-#!/bin/bash
 # Methode de sauvegarde sur USB
-
 
 ########### CONFIGURATION ##########
 # Disque USB à monter
-declare -r USB_DISK='/dev/hdd_usb_front_haut_1'
+USB_DISK='/dev/hdd_usb_front_haut_1'
 # Sous répertoire contenant les sauvegardes
-declare -r USB_REPO="yunohost_archives"
+USB_REPO="yunohost_archives"
 
 ######## VARIABLES GLOBALES ########
 # Mounted dest dir (without ending /) can be modified if USB_DISK is already mounted
 USB_DEST_DIR="/mnt/usb_backup"
-
-source "$ROOT_DIR/functions.sh"
 
 ############ FONCTIONS ###########
 
@@ -45,7 +41,7 @@ function prepare() {
     if mount | grep -q "${USB_DISK}"; then
         USB_DEST_DIR=$(mount | grep "${USB_DISK}" | awk "{ print \$3 }")
 
-        msg "Disk '${USB_DISK}' déjà monté sur '${USB_DEST_DIR}'." "warning"
+        msg "Disk '${USB_DISK}' déjà monté sur '${USB_DEST_DIR}'." "info"
 
         return 0
     fi

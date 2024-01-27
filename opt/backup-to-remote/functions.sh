@@ -83,7 +83,8 @@ msg() {
     local now="$(date "+%Y-%m-%d %H:%M:%S") "
     local logMsg=$(printf '%s%s%s\n' "$now" "$prefix" "$message")
 
-    MESSAGES="$MESSAGES\n$logMsg"
+    MESSAGES="$MESSAGES
+$logMsg"
     echo "$logMsg" >> "$LOGFILE"
 
     
