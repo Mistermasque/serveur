@@ -26,7 +26,7 @@ source "$ROOT_DIR/functions.sh"
 usage() {
     cat << USAGE
 Script d'envoi des sauvegardes sur une destination.
-Usage : $0 [OPTIONS] <method>
+Usage : $0 [OPTIONS] <method> <args>
 
 <method> : la méthode de sauvegarde. les valeurs possibles :
 $(echo ${METHODS[@]} )
@@ -35,7 +35,13 @@ Options :
     -h : affiche cette aide
     -q : N'affiche pas sur la sortie standard
     -v : mode verbeux
+
+<args> : arguments variables suivant la méthode :
+Méthode usb :
+    - <disque cible (dans dev)> : exemple /dev/front_usb
 USAGE
+
+
 }
 
 
@@ -61,11 +67,12 @@ while getopts "hqv" arg; do
     esac
 done
 
-loadMethod "$1"
+loadMethod "$1" 
+shift
 
 msg "Démarrage backup to ${METHOD}..."
 
-prepare
+prepare $*
 
 ls -t "$SRC_DIR" | egrep "$SRC_FILES_PATERN" | while read file; do
     path="${SRC_DIR}/${file}"

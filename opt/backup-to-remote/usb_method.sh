@@ -26,6 +26,13 @@ function getAvalaibleDiskSpace() {
 }
 
 function prepare() {
+    if [[ -n "$1" ]]; then
+        if [[ ! -b $1 ]]; then
+            abord "L'argument '$1' ne correspond pas à un périphérique de disque !"
+        fi
+        USB_DISK="$1"
+    fi
+
     msg "Montage du disque USB '${USB_DISK}'..."
 
     if mount | grep -q "${USB_DEST_DIR}"; then

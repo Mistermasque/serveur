@@ -1,7 +1,7 @@
 [Unit]
-Description=Backup to USB Flash Disk
+Description=Backup to USB Disk
 BindsTo=dev-%i.device
 
 [Service]
 Type=simple
-ExecStart=/opt/backup-to-remote/backup-to-remote.sh -l usb
+ExecStart=/opt/backup-to-remote/backup-to-remote.sh -l usb /dev/%i
