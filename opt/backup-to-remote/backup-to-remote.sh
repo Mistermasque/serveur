@@ -75,6 +75,11 @@ msg "Démarrage backup to ${METHOD}..."
 prepare $*
 
 ls -t "$SRC_DIR" | egrep "$SRC_FILES_PATERN" | while read file; do
+
+    if [[ ! -f $file || -L $file ]]; then
+        continue
+    fi
+
     path="${SRC_DIR}/${file}"
     filesize=$(du -sb "${path}" | awk "{ print \$1 }")
     
