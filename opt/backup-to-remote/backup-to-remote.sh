@@ -71,6 +71,8 @@ loadMethod "$1"
 shift
 
 msg "Démarrage backup to ${METHOD}..."
+nbFiles=0
+nbFilesError=0
 
 prepare $*
 
@@ -89,10 +91,14 @@ ls -t "$SRC_DIR" | egrep "$SRC_FILES_PATERN" | while read file; do
         msg "Fichier '$file' size=$(hrb $filesize) transféré !" 'success'
     else
         msg "Fichier '$file' size=$(hrb $filesize) ne peut pas être transféré !" 'warning'
+        nbFilesError=$(( nbFilesError++ ))
     fi
 
+    nbFiles=$(( nbFiles++ ))
 done
 
 cleanup
+
+msg "Fin du backup to ${METHOD}. Nombre de fichiers traités = ${nbFiles}. Nombre de fichiers en erreur = ${nbFilesError}"
 
 sendMail "Sauvegarde ${METHOD} - OK"
