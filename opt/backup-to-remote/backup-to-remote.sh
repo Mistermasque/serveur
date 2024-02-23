@@ -76,11 +76,12 @@ prepare $*
 
 ls -t "$SRC_DIR" | egrep "$SRC_FILES_PATERN" | while read file; do
 
-    if [[ ! -f $file || -L $file ]]; then
+    path="${SRC_DIR}/${file}"
+
+    if [[ ! -f $path || -L $path ]]; then
         continue
     fi
-
-    path="${SRC_DIR}/${file}"
+    
     filesize=$(du -sb "${path}" | awk "{ print \$1 }")
     
     msg "Sauvegarde fichier '$file'...."
