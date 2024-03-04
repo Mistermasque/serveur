@@ -1,2 +1,2 @@
-# Copie vers Rclone tous les dimanches à 4h du matin
+# Copie vers Rclone tous les dimanches à 3h du matin
 0 3 * * sun root /opt/backup-to-remote/backup-to-remote.sh rclone -q

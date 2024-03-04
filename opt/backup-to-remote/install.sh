@@ -4,7 +4,6 @@
 # Liste des fichiers et de leur destination
 # <nom du fichier>,<destination>
 declare -ra SYMLINK_FILES=(
-    "backup-to-remote.cron,/etc/cron.d/backup-to-remote"
     "backup-to-remote.logrotate,/etc/logrotate.d/backup-to-remote"
     "backup-to-usb-@.service,/etc/systemd/system/backup-to-usb-@.service"
     "yunohost-backup,/etc/yunohost/hooks.d/backup/98-backup-to-remote"
@@ -12,6 +11,7 @@ declare -ra SYMLINK_FILES=(
 
 declare -ra COPY_FILES=(
     "yunohost-restore,/etc/yunohost/hooks.d/restore/98-backup-to-remote"
+    "backup-to-remote.cron,/etc/cron.d/backup-to-remote"
 )
 
 REP_INSTALL='/opt/backup-to-remote'
