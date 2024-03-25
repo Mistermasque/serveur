@@ -91,10 +91,10 @@ ls -t "$SRC_DIR" | egrep "$SRC_FILES_PATERN" | while read file; do
         msg "Fichier '$file' size=$(hrb $filesize) transféré !" 'success'
     else
         msg "Fichier '$file' size=$(hrb $filesize) ne peut pas être transféré !" 'warning'
-        nbFilesError=$(( nbFilesError++ ))
+        nbFilesError=$(( nbFilesError + 1 ))
     fi
 
-    nbFiles=$(( nbFiles++ ))
+    nbFiles=$(( nbFiles + 1 ))
 done
 
 cleanup
