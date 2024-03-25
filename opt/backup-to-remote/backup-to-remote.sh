@@ -95,8 +95,7 @@ msg() {
     local now="$(date "+%Y-%m-%d %H:%M:%S") "
     local logMsg=$(printf '%s%s%s\n' "$now" "$prefix" "$message")
 
-    MESSAGES="$MESSAGES
-$logMsg"
+    MESSAGES="$MESSAGES\n$logMsg"
     echo "$logMsg" >> "$LOGFILE"
 
     
@@ -142,7 +141,7 @@ bhr() {
 sendMail() {
     local subject="$1"
     if [[ -n $MAIL ]]; then
-        echo $MESSAGES | mail -s "$subject" $MAIL
+        echo -e "$MESSAGES" | mail -s "$subject" $MAIL
     fi
 }
 
