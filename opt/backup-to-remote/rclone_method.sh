@@ -9,10 +9,92 @@ RCLONE_DEST="${RCLONE_REMOTE}/yunohost_archives"
 # (boolean) indique si le remote est crypté ou non
 RCLONE_REMOTE_CRYPTED=true
 
-############ FONCTIONS ###########
+############ FONCTIONS UTILISEES DANS LE SCRIPT PRINCIPAL ###########
+
+# Liste les backups qui sont distants
+# Le résultat est affiché sur la sortie standard
+function listRemoteBackups() {
+    rclone lsf "$RCLONE_DEST" | grep ".info.json" | sed s/'.info.json'//g
+}
+
+
+# Affiche sur la sortie standard le contenu du fichier info
+# @param $1 string le nom du backup
+function getRemoteInfo() {
+    local name="$1"
+
+    rclone cat "${RCLONE_DEST}/${name}.info.json"
+}
+
+
+# Function de transfert du backup vers le remote
+# @param $1 string le nom du backup
+# @param $2 string le chemin d'accès au fichier info
+# @param $3 string le chemin d'accès au fichier d'archive
+# @param $4 integer la taille du fichier d'archive
+# @param $5 integer la date heure au format timestamp de l'archive
+# @return 0 si OK, 1 si impossibilité de transférer, 2 si erreur pendant le transfert 
+function backupToDest() {
+    local name="$1"
+    local localInfoPath="$2"
+    local localArchivePath="$3"
+    local archiveSize=$4
+    local archiveTimestamp=$5
+
+
+    if ! _makeRoomOnRemote $archiveSize $archiveTimestamp; then
+        msg "Impossible de faire suffisamment de place sur le remote" 'warning'
+        return 1
+    fi
+
+    if ! rclone copy "${localInfoPath}" "${RCLONE_DEST}"; then
+        msg "Le fichier '${localInfoPath}' ne peut pas être transféré sur le remote '${RCLONE_DEST}'" 'error'
+        return 2
+    fi
+
+    local infoFilename=$( basename "$localInfoPath" )
+
+    msg "Vérification du fichier ${infoFilename}..."
+    if ! _checkFile "${localInfoPath}" "${RCLONE_DEST}/"; then
+        msg "Le fichier d'info local et le distant sont différents. Un problème est survenu pendant la copie" 'error'
+        rclone deletefile "${RCLONE_DEST}/${infoFilename}"
+        return 2
+    fi
+    
+    if ! rclone copy "${localArchivePath}" "${RCLONE_DEST}"; then
+        msg "Le fichier '${localArchivePath}' ne peut pas être transféré sur le remote '${RCLONE_DEST}'" 'error'
+        rclone deletefile "${RCLONE_DEST}/${infoFilename}"
+        return 2
+    fi
+
+    local archiveFilename=$( basename "$localArchivePath" )
+
+    msg "Vérification du fichier ${archiveFilename}..."
+    if ! _checkFile "${localArchivePath}" "${RCLONE_DEST}/"; then
+        msg "Le fichier d'archive local et le distant sont différents. Un problème est survenu pendant la copie" 'error'
+        rclone deletefile "${RCLONE_DEST}/${archiveFilename}"
+        rclone deletefile "${RCLONE_DEST}/${infoFilename}"
+        return 2
+    fi
+
+    return 0
+}
+
+function prepare() {
+    _checkDependencies
+    return 0
+}
+
+function cleanup() {
+    return 0
+}
+
+
+#################### FONCTIONS LOCALES ###############""
+
 
 # Vérifie si rclone est installé
-checkDependencies() {
+function _checkDependencies() {
     if ! command -v "rclone" &> /dev/null
    then
       abord "Command rclone non trouvée. merci de l'installer avant d'utiliser ce script.
@@ -22,42 +104,17 @@ Voir https://rclone.org/install/ pour les instruction d'installation."
 
 # Récupère la place disponible sur le remote
 # @param $1 string le remote à tester
-function getAvalaibleDiskSpaceOnRemote() {
+function _getAvalaibleDiskSpaceOnRemote() {
     local remote="$1"
     rclone about --json ${remote} | grep "free" | sed 's/.*"free": *\([^,}]*\).*/\1/'
 }
 
-execute() { 
-   local conf_name="$1"
-   local name=$(stoml "$CONFIG_FILE" remotes.$conf_name.name)
-   local local_path=$(stoml "$CONFIG_FILE" remotes.$conf_name.local_path)
-   local remote_path=$(stoml "$CONFIG_FILE" remotes.$conf_name.remote_path)
-   local sync_younger_than=$(stoml "$CONFIG_FILE" remotes.$conf_name.sync_younger_than)
 
-   msg "Execute sync for remote '$name'..."
-
-   local cmd="rclone sync \"$local_path\" \"${name}:${remote_path}\""
-
-   if [[ $VERBOSE = true ]]; then
-      cmd="$cmd -v"
-   fi
-
-   if [[ -n $sync_younger_than ]]; then
-      cmd="$cmd --max-age"
-   fi
-   
-   msg "$cmd" 'verbose'
-}
-
-function prepare() {
-    checkDependencies
-    return 0
-}
 
 # Fonction permetant de déterminer si le remote est crypté ou non
 # $1 string le nom du remote
 # return 0 si crypté 1 si non
-function isRemoteCrypted() {
+function _isRemoteCrypted() {
     local remote="$1"
 
     rclone listremotes --long | grep "$remote" | grep -q crypt
@@ -67,12 +124,12 @@ function isRemoteCrypted() {
 # Fonction de vérification du fichier local et distant sur le remote
 # $1 string fichier source (chemin complet)
 # $2 string le répertoire contenant le fichier distant
-function checkFile() {
+function _checkFile() {
     local srcFile="$1"
     local destFile="$2"
     local cmd="check"
 
-    if isRemoteCrypted "$RCLONE_REMOTE"; then
+    if _isRemoteCrypted "$RCLONE_REMOTE"; then
         cmd="cryptcheck"
     fi
 
@@ -81,51 +138,65 @@ function checkFile() {
     return $?
 }
 
-# Fonction de sauvegarde du fichier local vers distant
-# $1 le fichier local à sauvegarder (chemin complet)
-# $2 la taille du fichier à sauvegarder
-function backupFileToDest() {
-    local srcFile="$1"
-    local srcFileSize="$2"
-    local filename=$( basename "$srcFile" )
-    local destFile="${RCLONE_DEST}/${filename}"
+# Fonction permettant de faire de la place sur le distant
+# @param $1 integer la taille demandée minimale pour faire de la place
+# @param $2 integer timestamp indiquant qu'il faut supprimer avant cette date
+# @return 0 si OK, 1 si impossible de faire assez de place
+function _makeRoomOnRemote() {
+    local neededSpace=$1
+    local timestamp=$2
 
-    # Vérification qu'il y a assez de place pour sauvegarder le fichier
-    local remoteAvailableSpace=$(getAvalaibleDiskSpaceOnRemote "${RCLONE_REMOTE}")
+    local remoteAvailableSpace=$(_getAvalaibleDiskSpaceOnRemote "${RCLONE_REMOTE}")
+    if [[ $remoteAvailableSpace -gt $neededSpace ]]; then
+        return 0
+    fi
 
-    if [[ $remoteAvailableSpace -lt $srcFileSize ]]; then
-        msg "Place insuffisante sur le remote (espace restant = $(hrb ${remoteAvailableSpace}). On tente de faire de la place..." "warning"
+    msg "Place insuffisante sur le remote (espace restant = $(hrb ${remoteAvailableSpace}). On tente de faire de la place..." "warning"
+
+    local remoteBackups=$(listRemoteBackups)
+
+    for remoteBackup in $remoteBackups; do
         
-        if [[ $VERBOSE = true ]]; then
-            msg "Liste des fichiers à supprimer supérieurs à 3 mois:" "verbose"
-            msg $(rclone --min-age "3M" lsl "${RCLONE_DEST}") "verbose"
+        if ! isBackupYoungerThanTimestamp "$remoteBackup" "$timestamp"; then
+            msg "Suppression backup distant ${remoteBackup}..."
+            if ! _deleteRemoteBackup "${}"; then
+                msg "Erreur à la suppression backup distant ${remoteBackup} !" "error"
+                continue
+            else
+                msg "Backup distant ${remoteBackup} supprimé"
+            fi
+
+            remoteAvailableSpace=$(_getAvalaibleDiskSpaceOnRemote "${RCLONE_REMOTE}")
+            if [[ $remoteAvailableSpace -gt $neededSpace ]]; then
+                msg "Suffisamment de place a été libérée sur le remote (espace restant = $(hrb ${remoteAvailableSpace}) !" "success"
+                return 0
+            fi
+
+            msg "Pas assez de place libérée (espace restant = $(hrb ${remoteAvailableSpace}). On continue..."
         fi
-        rclone --min-age "3M" delete "${RCLONE_DEST}"
 
-        remoteAvailableSpace=$(getAvalaibleDiskSpaceOnRemote "${RCLONE_REMOTE}")
-        msg "Espace après suppression anciens fichiers = $(hrb ${remoteAvailableSpace})" "verbose"
+    done
 
-        if [[ $remoteAvailableSpace -lt $srcFileSize ]]; then
-            msg "Impossible de faire suffisamment de place sur le remote" 'warning'
-            return 1
-        fi
-    fi
 
-    if ! rclone copy "${srcFile}" "${RCLONE_DEST}"; then
-        msg "Le fichier '${srcFile}' ne peut pas être transféré sur le remote '${RCLONE_DEST}'" 'error'
-        return 2
-    fi
-
-    msg "Vérification du fichier ${filename}..."
-    if ! checkFile "${srcFile}" "${RCLONE_DEST}/"; then
-        msg "Le fichier local et le distant sont différents. Un problème est survenu pendant la copie" 'error'
-        rclone deletefile "${destFile}"
-        return 2
-    fi
-
-    return 0
+    msg "Impossible de trouver assez de backups distants à supprimer" "warning"
+    return 1
 }
 
-function cleanup() {
+# Supprime un backup distant
+# @param $1 string le nom du backup à supprimer
+# @return 0 si ok 1 sinon
+function _deleteRemoteBackup() {
+    local name="$1"
+    local infoFile=$(rclone lsf "$RCLONE_DEST" | grep "$name" | grep ".info.json")
+    local archiveFile=$(rclone lsf "$RCLONE_DEST" | grep "$name" | grep ".tar")
+
+    if ! rclone deletefile "${RCLONE_DEST}/${infoFile}"; then
+        return 1
+    fi
+
+    if ! rclone deletefile "${RCLONE_DEST}/${archiveFile}"; then
+        return 1
+    fi
+
     return 0
 }

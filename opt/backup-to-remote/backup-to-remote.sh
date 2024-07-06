@@ -1,11 +1,11 @@
 #!/bin/bash
-set -eo pipefail
+set -e
 # Script d'envoi des sauvegardes sur les différents supports cible
 
 
 ########### CONFIGURATION ##########
 # Répertoire source contenant les fichiers à transférer
-declare -r SRC_DIR="/home/yunohost.backup/archives"
+declare -r YNH_BACKUP_DIR="/home/yunohost.backup/archives"
 # Patern de recherche des fichiers d'archive
 declare -r SRC_FILES_PATERN='^[0-9]{8}-[0-9]{6}\.(tar|info\.json|tar\.gz)$'
 # Send mail to admins group
@@ -43,8 +43,18 @@ loadMethod() {
     if [[ ${METHODS[@]} =~ $method ]]; then
         source "${ROOT_DIR}/${method}_method.sh"
 
-        if [[ $(type -t backupFileToDest) != function ]]; then
-            msg "Le fichier de méthode '${method}_method.sh' ne contient pas la fonction 'backupFileToDest'" 'error'
+        if [[ $(type -t listRemoteBackups) != function ]]; then
+            msg "Le fichier de méthode '${method}_method.sh' ne contient pas la fonction 'listRemoteBackups'" 'error'
+            exit 2
+        fi
+
+        if [[ $(type -t getRemoteInfo) != function ]]; then
+            msg "Le fichier de méthode '${method}_method.sh' ne contient pas la fonction 'getRemoteInfo'" 'error'
+            exit 2
+        fi
+        
+        if [[ $(type -t backupToDest) != function ]]; then
+            msg "Le fichier de méthode '${method}_method.sh' ne contient pas la fonction 'backupToDest'" 'error'
             exit 2
         fi
 
@@ -166,6 +176,74 @@ USAGE
 
 }
 
+# Vérifie si l'archive Yunohost est valide
+# $1 string : le nom de l'archive
+checkBackup() {
+    local backupName="$1"
+    local infoFile="${YNH_BACKUP_DIR}/${backupName}.info.json"
+    local tarFile="${YNH_BACKUP_DIR}/${backupName}.tar"
+
+}
+
+# Récupère la date au format timestamp à partir du contenu du fichier info de l'archive
+# le résultat est affiché sur la sortie standard
+# @param $1 string le contenu du fichier info.json
+getDateFromInfo() {
+    echo "$1" | sed s/'.*"created_at": \([0-9]*\).*'/'\1'/g
+}
+
+# Vérifie si le backup 1 est plus récent que le backup 2
+# @param $1 string infoBackup1 le contenu json du backup 1
+# @param $2 string infoBackup2 le contenu json du backup 2
+# @return 0 si plus récent 1 sinon
+function isBackupYounger() {
+    local infoBackup1="$1"
+    local infoBackup2="$2"
+
+    if echo "$infoBackup1" | grep -qv "created_at"; then
+        abort "isBackupYounger : infoBackup1 ne contient pas 'created_at'"
+    fi
+
+    if echo "$infoBackup2" | grep -qv "created_at"; then
+        abort "isBackupYounger : infoBackup2 ne contient pas 'created_at'"
+    fi
+
+    local timestamp1=$(getDateFromInfo "$infoBackup1")
+    local timestamp2=$(getDateFromInfo "$infoBackup2")
+
+    if [[ ${timestamp1} -gt ${timestamp2} ]]; then
+        return 0
+    fi
+
+    return 1
+}
+
+# Vérifie si le backup 1 est plus récent que le timestamp
+# @param $1 string infoBackup le contenu json du backup
+# @param $2 integer la date heure au format timestamp à comparer
+# @return 0 si plus récent backup est plus récent que le timestamp 1 sinon
+function isBackupYoungerThanTimestamp() {
+    local infoBackup="$1"
+    local timestamp="$2"
+
+    if echo "$infoBackup" | grep -qv "created_at"; then
+        abort "isBackupYoungerThanTimestamp : infoBackup ne contient pas 'created_at'"
+    fi
+
+    if echo "$timestamp" | grep -qv "^[0-9]+$"; then
+        abort "isBackupYoungerThanTimestamp : timestamp n'est pas un entier"
+    fi
+
+    local backupTimestamp=$(getDateFromInfo "$infoBackup")
+
+    if [[ ${backupTimestamp} -gt ${timestamp} ]]; then
+        return 0
+    fi
+
+    return 1
+}
+
+
 ####### MAIN ########
 
 while getopts "hqv" arg; do
@@ -185,40 +263,79 @@ while getopts "hqv" arg; do
             exit 1
         ;;
     esac
+    shift
 done
 
 loadMethod "$1" 
 shift
 
 msg "Démarrage backup to ${METHOD}..."
+
+prepare $*
+err=$?
+
+if [[ $err -eq 1 ]]; then
+    abord "Erreur au démarrage du script !"
+elif [[ $err -ge 2 ]]; then
+    cleanup
+    abord "Erreur au démarrage du script !"
+fi
+
+# Liste des backups locaux disponibles triés par ordre du plus récents au plus ancien
+localBackups=$(ls -t "$YNH_BACKUP_DIR" | grep ".info.json" | sed s/'.info.json'//g)
+# Liste des backups sur le remote au même format que le backup local
+remoteBackups=$(listRemoteBackups)
+# Liste des backups à sauvegarder
+declare -a backupsToSave=()
+
+msg "Liste des backups locaux : ${localBackups}" "verbose"
+msg "Liste des backups distants : ${remoteBackups}" "verbose"
+
+for localBackup in ${localBackups}; do
+    addBackupToList=true
+    localInfo=$(cat "${YNH_BACKUP_DIR}/${localBackup}.info.json")
+    for remoteBackup in ${remoteBackups}; do
+        remoteInfo=$(getRemoteInfo "$remoteBackup")
+        if [ "${localBackup}" = "${remoteBackup}" ] || isBackupYounger "$remoteInfo" "$localInfo"; then
+            addBackupToList=false 
+            break
+        fi
+    done
+    if [[ $addBackupToList = true ]]; then
+        backupsToSave+=("$localBackup")
+    fi
+done
+
 nbFiles=0
 nbFilesError=0
 
-prepare $*
+if [[ ${#backupsToSave[@]} -eq 0 ]]; then
+    msg "Aucun élément à transférer."
+else
+    msg "Liste des backups à transférer : ${backupsToSave[@]}"
 
-for file in $( ls -t "$SRC_DIR" | egrep "$SRC_FILES_PATERN" ); do
+    for backup in ${backupsToSave[@]}; do
 
-    path="${SRC_DIR}/${file}"
+        infoFilePath="${YNH_BACKUP_DIR}/${backup}.info.json"
+        backupFilePath=$(find /home/yunohost.backup/archives -mindepth 1 -name "${backup}.tar*" ! -type l | head -1)
+        size=$(du -sb "${backupFilePath}" | awk "{ print \$1 }")
+        timestamp=$(getDateFromInfo "$(cat "$infoFilePath")")
 
-    if [[ ! -f $path || -L $path ]]; then
-        continue
-    fi
-    
-    filesize=$(du -sb "${path}" | awk "{ print \$1 }")
-    
-    msg "Sauvegarde fichier '$file'...."
-    if backupFileToDest "$path" "$filesize"; then
-        msg "Fichier '$file' size=$(hrb $filesize) transféré !" 'success'
-    else
-        msg "Fichier '$file' size=$(hrb $filesize) ne peut pas être transféré !" 'warning'
-        nbFilesError=$(( nbFilesError + 1 ))
-    fi
-
-    nbFiles=$(( nbFiles + 1 ))
-done
+        if backupToDest "$backup" "$infoFilePath" "$backupFilePath" "$size" "$timestamp"; then
+            msg "Backup '$backup' size=$(hrb $size) transféré !" 'success'
+        else
+            msg "Backup '$backup' size=$(hrb $size) ne peut pas être transféré !" 'warning'
+            nbFilesError=$(( nbFilesError + 1 ))
+        fi
+    done
+fi
 
 cleanup
 
-msg "Fin du backup to ${METHOD}. Nombre de fichiers traités = ${nbFiles}. Nombre de fichiers en erreur = ${nbFilesError}"
+msg "Fin du backup ${METHOD}. Nombre de fichiers traités = ${nbFiles}. Nombre de fichiers en erreur = ${nbFilesError}"
 
-sendMail "Sauvegarde ${METHOD} - OK"
+if [[ $nbFilesError -eq 0 ]]; then
+    sendMail "Sauvegarde ${METHOD} - OK"
+else
+    sendMail "Sauvegarde ${METHOD} - ERREUR"
+fi
