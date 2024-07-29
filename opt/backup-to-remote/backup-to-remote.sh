@@ -312,7 +312,7 @@ nbFilesError=0
 if [[ ${#backupsToSave[@]} -eq 0 ]]; then
     msg "Aucun élément à transférer."
 else
-    msg "Liste des backups à transférer : ${backupsToSave[@]}"
+    msg "Liste des backups à transférer : '${backupsToSave[@]}'"
 
     for backup in ${backupsToSave[@]}; do
 
