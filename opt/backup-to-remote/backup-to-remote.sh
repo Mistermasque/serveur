@@ -201,11 +201,11 @@ function isBackupYounger() {
     local infoBackup2="$2"
 
     if echo "$infoBackup1" | grep -qv "created_at"; then
-        abort "isBackupYounger : infoBackup1 ne contient pas 'created_at'"
+        abord "isBackupYounger : infoBackup1 ne contient pas 'created_at'"
     fi
 
     if echo "$infoBackup2" | grep -qv "created_at"; then
-        abort "isBackupYounger : infoBackup2 ne contient pas 'created_at'"
+        abord "isBackupYounger : infoBackup2 ne contient pas 'created_at'"
     fi
 
     local timestamp1=$(getDateFromInfo "$infoBackup1")
@@ -227,11 +227,11 @@ function isBackupYoungerThanTimestamp() {
     local timestamp="$2"
 
     if echo "$infoBackup" | grep -qv "created_at"; then
-        abort "isBackupYoungerThanTimestamp : infoBackup ne contient pas 'created_at'"
+        abord "isBackupYoungerThanTimestamp : infoBackup ne contient pas 'created_at'"
     fi
 
     if echo "$timestamp" | grep -qv "^[0-9]+$"; then
-        abort "isBackupYoungerThanTimestamp : timestamp n'est pas un entier"
+        abord "isBackupYoungerThanTimestamp : timestamp n'est pas un entier"
     fi
 
     local backupTimestamp=$(getDateFromInfo "$infoBackup")
@@ -321,6 +321,7 @@ else
         size=$(du -sb "${backupFilePath}" | awk "{ print \$1 }")
         timestamp=$(getDateFromInfo "$(cat "$infoFilePath")")
 
+        msg "Transfert backup '$backup'..." "info"
         if backupToDest "$backup" "$infoFilePath" "$backupFilePath" "$size" "$timestamp"; then
             msg "Backup '$backup' size=$(hrb $size) transféré !" 'success'
         else

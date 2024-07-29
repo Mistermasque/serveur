@@ -43,35 +43,41 @@ function backupToDest() {
         return 1
     fi
 
+    local infoFilename=$( basename "$localInfoPath" )
+
+    msg "Transfert fichier d'info '${infoFilename}'..." "verbose"
     if ! cp -a "${localInfoPath}" "${USB_DEST}"; then
         msg "Le fichier '${localInfoPath}' ne peut pas être transféré sur le disque '${USB_DEST}'" 'error'
         return 2
     fi
 
-    local infoFilename=$( basename "$localInfoPath" )
-
-    msg "Vérification du fichier ${infoFilename}..."
+    msg "Vérification du fichier d'info ${infoFilename}..." "verbose"
     if ! _checkFile "${localInfoPath}" "${USB_DEST}/${infoFilename}"; then
         msg "Le fichier d'info local et le distant sont différents. Un problème est survenu pendant la copie" 'error'
         rm -f "${USB_DEST}/${infoFilename}"
         return 2
     fi
+    msg "Fichier d'info '${infoFilename}' transféré" "success"
+
+    local archiveFilename=$( basename "$localArchivePath" )
     
+    msg "Transfert fichier d'archive '${archiveFilename}'..." "verbose"
     if ! cp -a "${localArchivePath}" "${USB_DEST}"; then
         msg "Le fichier '${localArchivePath}' ne peut pas être transféré sur le disque '${USB_DEST}'" 'error'
         rm -f "${USB_DEST}/${infoFilename}"
         return 2
     fi
 
-    local archiveFilename=$( basename "$localArchivePath" )
 
-    msg "Vérification du fichier ${archiveFilename}..."
+    msg "Vérification du fichier d'archive ${archiveFilename}..." "verbose"
     if ! _checkFile "${localArchivePath}" "${USB_DEST}/${archiveFilename}"; then
         msg "Le fichier d'archive local et le distant sont différents. Un problème est survenu pendant la copie" 'error'
         rm -f "${USB_DEST}/${archiveFilename}"
         rm -f "${USB_DEST}/${infoFilename}"
         return 2
     fi
+
+    msg "Fichier d'archive '${archiveFilename}' transféré" "success"
 
     return 0
 }
@@ -223,7 +229,7 @@ function _makeRoomOnRemote() {
         
         if ! isBackupYoungerThanTimestamp "$remoteBackup" "$timestamp"; then
             msg "Suppression backup distant ${remoteBackup}..."
-            if ! _deleteRemoteBackup "${}"; then
+            if ! _deleteRemoteBackup "${remoteBackup}"; then
                 msg "Erreur à la suppression backup distant ${remoteBackup} !" "error"
                 continue
             else
