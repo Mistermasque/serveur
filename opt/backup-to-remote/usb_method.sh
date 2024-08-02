@@ -226,8 +226,9 @@ function _makeRoomOnRemote() {
     local remoteBackups=$(listRemoteBackups)
 
     for remoteBackup in $remoteBackups; do
+        remoteInfo=$(getRemoteInfo "$remoteBackup")
         
-        if ! isBackupYoungerThanTimestamp "$remoteBackup" "$timestamp"; then
+        if ! isBackupYoungerThanTimestamp "$remoteInfo" "$timestamp"; then
             msg "Suppression backup distant ${remoteBackup}..."
             if ! _deleteRemoteBackup "${remoteBackup}"; then
                 msg "Erreur à la suppression backup distant ${remoteBackup} !" "error"

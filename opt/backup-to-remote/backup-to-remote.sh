@@ -228,7 +228,7 @@ function isBackupYoungerThanTimestamp() {
 
     if echo "$infoBackup" | grep -qv "created_at"; then
         msg "isBackupYoungerThanTimestamp : infoBackup ne contient pas 'created_at'" "verbose"
-        msg "Contenu info : '$infoBackupr'" "verbose"
+        msg "Contenu info : '$infoBackup'" "verbose"
         abord "isBackupYoungerThanTimestamp : impossible de déterminer la date de création dans les données d'info"
     fi
 
