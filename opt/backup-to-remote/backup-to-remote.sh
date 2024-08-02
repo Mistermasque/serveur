@@ -232,7 +232,7 @@ function isBackupYoungerThanTimestamp() {
         abord "isBackupYoungerThanTimestamp : impossible de déterminer la date de création dans les données d'info"
     fi
 
-    if echo "$timestamp" | grep -qv "^[0-9]+$"; then
+    if echo "$timestamp" | grep -qv "^[0-9][0-9]*$"; then
         msg "isBackupYoungerThanTimestamp : timestamp '$timestamp' n'est pas un entier" "verbose"
         abord "isBackupYoungerThanTimestamp : impossible de comparer le timestamp fourni avec les infos"
     fi
