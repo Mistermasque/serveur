@@ -239,7 +239,7 @@ function _makeRoomOnRemote() {
 
             remoteAvailableSpace=$(_getAvalaibleDiskSpaceOnDir "${USB_MOUNTED_DIR}")
             if [[ $remoteAvailableSpace -gt $neededSpace ]]; then
-                msg "Suffisamment de place a été libérée sur le disque USB (espace restant = $(hrb ${remoteAvailableSpace}) !" "success"
+                msg "Suffisamment de place a été libérée sur le disque USB (espace restant = $(hrb ${remoteAvailableSpace}))" "success"
                 return 0
             fi
 

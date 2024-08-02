@@ -175,7 +175,7 @@ function _makeRoomOnRemote() {
 
             remoteAvailableSpace=$(_getAvalaibleDiskSpaceOnRemote "${RCLONE_REMOTE}")
             if [[ $remoteAvailableSpace -gt $neededSpace ]]; then
-                msg "Suffisamment de place a été libérée sur le remote (espace restant = $(hrb ${remoteAvailableSpace}) !" "success"
+                msg "Suffisamment de place a été libérée sur le remote (espace restant = $(hrb ${remoteAvailableSpace}))" "success"
                 return 0
             fi
 
