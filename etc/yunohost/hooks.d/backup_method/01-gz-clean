@@ -97,7 +97,7 @@ function checkSpaceAndPruneOldArchives() {
     local _availableSpaceOnDisk=$(getAvalaibleDiskSpace "${LOCAL_REPO}")
 
     if [[ $_availableSpaceOnDisk -lt $BACKUP_SIZE ]]; then
-        msg "Il n'y a pas assez d'espace sur le disque pour créer l'archive (espace restant = $( hrb ${_availableSpaceOnDisk} )). Tentative de suppressin des anciennes archives..." "warning"
+        msg "Il n'y a pas assez d'espace sur le disque pour créer l'archive (espace restant = $( hrb ${_availableSpaceOnDisk} )). Tentative de suppression des anciennes archives..." "warning"
 
         local _numberOfDays3MonthAgo=$(( ( $(date '+%s') - $(date -d '3 months ago' '+%s') ) / 86400 ))
         local _verboseArg=''

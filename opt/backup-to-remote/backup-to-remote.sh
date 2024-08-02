@@ -227,11 +227,14 @@ function isBackupYoungerThanTimestamp() {
     local timestamp="$2"
 
     if echo "$infoBackup" | grep -qv "created_at"; then
-        abord "isBackupYoungerThanTimestamp : infoBackup ne contient pas 'created_at'"
+        msg "isBackupYoungerThanTimestamp : infoBackup ne contient pas 'created_at'" "verbose"
+        msg "Contenu info : '$infoBackupr'" "verbose"
+        abord "isBackupYoungerThanTimestamp : impossible de déterminer la date de création dans les données d'info"
     fi
 
     if echo "$timestamp" | grep -qv "^[0-9]+$"; then
-        abord "isBackupYoungerThanTimestamp : timestamp n'est pas un entier"
+        msg "isBackupYoungerThanTimestamp : timestamp '$timestamp' n'est pas un entier" "verbose"
+        abord "isBackupYoungerThanTimestamp : impossible de comparer le timestamp fourni avec les infos"
     fi
 
     local backupTimestamp=$(getDateFromInfo "$infoBackup")

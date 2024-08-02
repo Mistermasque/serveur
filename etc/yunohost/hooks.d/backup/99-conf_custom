@@ -33,7 +33,7 @@ ynh_backup "/etc/update-motd.d/colors.sh"
 ynh_backup_dest "conf/custom/profile.d"
 ynh_backup "/etc/profile.d/aliases.sh"
 ynh_backup "/etc/profile.d/dircolors.sh"
-ynh_backup "/etc/profile.d/liquidprompt.sh"
+#ynh_backup "/etc/profile.d/liquidprompt.sh"
 
 ynh_backup_dest "conf/custom/antigen"
 ynh_backup "/opt/antigen/"
