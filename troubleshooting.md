@@ -114,3 +114,32 @@ Modifier le fstab après réintégration du disque.
 # RAID 
 
 - https://www.ducea.com/2009/03/08/mdadm-cheat-sheet/
+- https://ubuntuforums.org/showthread.php?t=1639651
+
+## Remplacer un disque défectueux
+On suppose remplacer le disque /dev/sdb
+
+```Bash
+sudo mdadm --detail /dev/md0
+sudo mdadm --manage /dev/md0 --fail /dev/sdb1
+sudo mdadm --manage /dev/md0 --remove /dev/sdb1
+```
+Arrêter le serveur, enlever le disque /dev/sdb et remettre le nouveau à la place puis rallumer le serveur.
+```bash
+sudo fdisk /dev/sdd
+```
+1. Créer une table de partition GPT
+2. Ajouter une partition (par défaut elle prendra toute la taille du disque)
+3. Définir la parttion au format **raid**
+4. Enregistrer
+
+Ajouter la partition au raid
+```bash
+sudo mdadm --manage /dev/md0 --add /dev/sdb1
+```
+
+Vérifier que le raid se reconstruit :
+```bash
+sudo mdadm --detail /dev/md0
+```
+
