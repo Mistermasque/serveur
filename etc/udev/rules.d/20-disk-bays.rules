@@ -29,30 +29,30 @@ SYMLINK+="hdd2_%n"
 
 # Identification du disque connecté au port SATA3 identifié à l'origine par /dev/sdc
 # résultat de la commande udevadm info --query=path --name=/dev/sdc
-# /devices/pci0000:00/0000:00:1f.2/ata5/host4/target4:0:0/4:0:0:0/block/sdc
+# /devices/pci0000:00/0000:00:1f.5/ata3/host2/target2:0:0/2:0:0:0/block/sdc
 KERNEL=="sd?", SUBSYSTEM=="block", \
-DEVPATH=="/devices/pci0000:00/0000:00:1f.2/ata5/host4/target4:0:0/4:0:0:0*", \
+DEVPATH=="/devices/pci0000:00/0000:00:1f.5/ata3/host2/target2:0:0/2:0:0:0*", \
 SYMLINK+="hdd3", \
 RUN+="/usr/bin/logger Disque connecté port SATA3 KERNEL=$kernel, DEVPATH=$devpath" \
 GOTO="END_20_DISK_BAY"
 
 # Les partitions du disque SATA 3
 KERNEL=="sd?*", SUBSYSTEM=="block", \
-DEVPATH=="/devices/pci0000:00/0000:00:1f.2/ata5/host4/target4:0:0/4:0:0:0*", \
+DEVPATH=="/devices/pci0000:00/0000:00:1f.5/ata3/host2/target2:0:0/2:0:0:0*", \
 SYMLINK+="hdd3_%n"
 
 # Identification du disque connecté au port SATA4 identifié à l'origine par /dev/sdd
 # résultat de la commande udevadm info --query=path --name=/dev/sdd
-# /devices/pci0000:00/0000:00:1f.2/ata6/host5/target5:0:0/5:0:0:0/block/sdd
+# /devices/pci0000:00/0000:00:1f.5/ata4/host3/target3:0:0/3:0:0:0/block/sdd
 KERNEL=="sd?", SUBSYSTEM=="block", \
-DEVPATH=="/devices/pci0000:00/0000:00:1f.2/ata6/host5/target5:0:0/5:0:0:0*", \
+DEVPATH=="/devices/pci0000:00/0000:00:1f.5/ata4/host3/target3:0:0/3:0:0:0*", \
 SYMLINK+="hdd4", \
 RUN+="/usr/bin/logger Disque connecté port SATA4 KERNEL=$kernel, DEVPATH=$devpath" \
 GOTO="END_20_DISK_BAY"
 
 # Les partitions du disque SATA 4
 KERNEL=="sd?*", SUBSYSTEM=="block", \
-DEVPATH=="/devices/pci0000:00/0000:00:1f.2/ata6/host5/target5:0:0/5:0:0:0*", \
+DEVPATH=="/devices/pci0000:00/0000:00:1f.5/ata4/host3/target3:0:0/3:0:0:00*", \
 SYMLINK+="hdd4_%n"
 
 LABEL="END_20_DISK_BAY"
